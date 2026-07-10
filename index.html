@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>AquaFinance</title>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2196F3">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="AquaFinance">
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0a0a0a;color:#fff;min-height:100vh;overflow-x:hidden}
+.container{max-width:600px;margin:0 auto;padding:20px}
+.header{text-align:center;padding:20px 0;font-size:1.2em;font-weight:300;letter-spacing:3px;opacity:0.6}
+.top-section{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;margin-bottom:25px}
+.main-drop{aspect-ratio:1;position:relative;cursor:pointer;transition:transform 0.3s}
+.main-drop:active{transform:scale(0.95)}
+.drop-ring{position:absolute;border-radius:50%;border:1px solid rgba(255,255,255,0.2)}
+.drop-ring:nth-child(1){width:100%;height:100%;background:radial-gradient(circle,rgba(255,255,255,0.1) 0%,transparent 70%);animation:pulse 3s ease-out infinite}
+.drop-ring:nth-child(2){width:75%;height:75%;top:12.5%;left:12.5%;border-color:rgba(255,255,255,0.3);animation-delay:0.5s}
+.drop-ring:nth-child(3){width:50%;height:50%;top:25%;left:25%;background:radial-gradient(circle,rgba(255,255,255,0.2) 0%,transparent 70%);border:none;animation-delay:1s}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:0.8}50%{transform:scale(1.05);opacity:0.5}}
+.drop-info{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;z-index:10}
+.drop-icon{font-size:1.3em;margin-bottom:6px;opacity:0.7}
+.drop-label{font-size:0.6em;opacity:0.5;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
+.drop-value{font-size:1em;font-weight:300;letter-spacing:1px}
+.quick-tags,.quick-input{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);border-radius:25px;padding:15px;margin-bottom:25px}
+.tags-row{display:flex;gap:8px;overflow-x:auto;padding:5px 0;scrollbar-width:none}
+.tags-row::-webkit-scrollbar{display:none}
+.tag{padding:6px 12px;border-radius:20px;font-size:0.75em;letter-spacing:0.5px;white-space:nowrap;cursor:pointer;transition:all 0.2s;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.7);flex-shrink:0;display:flex;align-items:center;gap:5px}
+.tag:active{transform:scale(0.95)}
+.tag.account.active{background:var(--tag-color);color:#000;border-color:var(--tag-color);font-weight:600;box-shadow:0 0 12px var(--tag-color)}
+.tag.recurring.active{background:var(--tag-color);color:#000;border-color:var(--tag-color);font-weight:600;box-shadow:0 0 12px var(--tag-color)}
+.tag-dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.tag-balance{font-size:0.85em;opacity:0.7;margin-left:3px}
+.tags-label{font-size:0.65em;opacity:0.4;letter-spacing:1px;text-transform:uppercase;padding:8px 4px 4px;display:flex;align-items:center;justify-content:space-between}
+.add-tag-btn{opacity:0.5;cursor:pointer;padding:2px 8px;border-radius:10px;transition:all 0.2s}
+.add-tag-btn:active{background:rgba(255,255,255,0.1);opacity:1}
+.input-row{display:flex;align-items:center;gap:10px;margin:10px 0;padding:5px}
+.btn-action{width:45px;height:45px;border-radius:50%;border:1px solid rgba(255,255,255,0.3);background:transparent;color:#fff;font-size:1.3em;cursor:pointer;transition:all 0.3s;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.btn-action:active{transform:scale(0.9)}
+.btn-plus{background:rgba(76,175,80,0.2);border-color:rgba(76,175,80,0.5);color:#4CAF50}
+.btn-plus:active{background:rgba(76,175,80,0.4)}
+.btn-minus{background:rgba(244,67,54,0.2);border-color:rgba(244,67,54,0.5);color:#F44336}
+.btn-minus:active{background:rgba(244,67,54,0.4)}
+.amount-input{flex:1;padding:12px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:#fff;border-radius:15px;font-size:1.2em;text-align:center;font-weight:300;letter-spacing:1px;min-width:0}
+.amount-input:focus{outline:none;border-color:rgba(255,255,255,0.4);background:rgba(255,255,255,0.08)}
+.amount-input::placeholder{color:rgba(255,255,255,0.3)}
+.active-hint{text-align:center;font-size:0.7em;opacity:0.5;margin-top:10px;min-height:14px}
+.open-modal-btn{width:100%;padding:15px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);border-radius:15px;color:#fff;font-size:0.9em;letter-spacing:2px;cursor:pointer;margin-bottom:25px;transition:all 0.3s}
+.open-modal-btn:active{background:rgba(255,255,255,0.1);transform:scale(0.98)}
+.modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.95);z-index:1000;align-items:flex-end;justify-content:center;backdrop-filter:blur(10px)}
+.modal-overlay.active{display:flex}
+.modal-content{background:#111;border-radius:30px 30px 0 0;width:100%;max-width:600px;height:85vh;display:flex;flex-direction:column;position:relative}
+.modal-handle{width:40px;height:4px;background:rgba(255,255,255,0.3);border-radius:2px;margin:15px auto 10px;flex-shrink:0}
+.modal-close-wrapper{position:absolute;top:10px;right:15px;z-index:20}
+.modal-close{width:32px;height:32px;border:1px solid rgba(255,255,255,0.4);background:rgba(0,0,0,0.5);color:#fff;border-radius:50%;font-size:1em;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(10px)}
+.modal-close:active{background:rgba(255,255,255,0.2)}
+.tabs-container{padding:0 15px;flex-shrink:0;margin-top:10px}
+.tabs{display:flex;gap:3px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:1;min-width:70px;padding:12px 8px;text-align:center;font-size:0.7em;letter-spacing:0.5px;cursor:pointer;border-radius:10px 10px 0 0;background:#1a1a1a;color:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.1);border-bottom:none;transition:all 0.2s;white-space:nowrap;position:relative;top:0}
+.tab:active{background:#222}
+.tab.active{background:#fff;color:#000;font-weight:600;top:-5px;border-color:rgba(255,255,255,0.3);box-shadow:0 -3px 10px rgba(255,255,255,0.1);z-index:2}
+.tab-content-wrapper{flex:1;overflow-y:auto;background:#111;border-top:1px solid rgba(255,255,255,0.1)}
+.tab-content{display:none;padding:25px 20px}
+.tab-content.active{display:block}
+.tab-title{font-size:1.1em;margin-bottom:20px;letter-spacing:2px;font-weight:300}
+.input-type-selector{display:flex;gap:10px;margin-bottom:20px}
+.type-btn{flex:1;padding:20px;border-radius:15px;border:2px solid rgba(255,255,255,0.2);background:transparent;color:#fff;font-size:1.2em;cursor:pointer;transition:all 0.3s}
+.type-btn.income{border-color:rgba(76,175,80,0.5);color:#4CAF50}
+.type-btn.income.active{background:rgba(76,175,80,0.2);border-color:#4CAF50}
+.type-btn.expense{border-color:rgba(244,67,54,0.5);color:#F44336}
+.type-btn.expense.active{background:rgba(244,67,54,0.2);border-color:#F44336}
+.input-amount{width:100%;padding:20px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.05);color:#fff;border-radius:15px;font-size:1.5em;text-align:center;margin-bottom:20px}
+.input-amount:focus{outline:none;border-color:rgba(255,255,255,0.5)}
+.input-field-group{margin-bottom:15px}
+.input-field-label{font-size:0.8em;opacity:0.5;margin-bottom:8px;letter-spacing:1px;text-transform:uppercase}
+.input-field,.select-field{width:100%;padding:15px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.05);color:#fff;border-radius:12px;font-size:1em}
+.input-field:focus,.select-field:focus{outline:none;border-color:rgba(255,255,255,0.5)}
+.select-field{cursor:pointer}
+.btn-submit{width:100%;padding:18px;border:none;border-radius:15px;font-size:1.1em;font-weight:600;cursor:pointer;margin-top:20px;letter-spacing:1px}
+.btn-submit.income{background:#4CAF50;color:#fff}
+.btn-submit.expense{background:#F44336;color:#fff}
+.list-item{display:flex;align-items:center;padding:15px;background:rgba(255,255,255,0.05);border-radius:15px;margin-bottom:10px;border:1px solid rgba(255,255,255,0.08)}
+.list-icon{width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;margin-right:12px;font-size:1.2em;flex-shrink:0}
+.list-info{flex:1;min-width:0}
+.list-name{font-size:0.95em;margin-bottom:3px}
+.list-detail{font-size:0.75em;opacity:0.5}
+.list-value{font-size:1em;font-weight:300;letter-spacing:1px;flex-shrink:0;margin-left:10px}
+.list-input{width:100px;padding:10px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.05);color:#fff;border-radius:10px;font-size:0.9em;text-align:right}
+.list-input:focus{outline:none;border-color:rgba(255,255,255,0.5)}
+.action-btns{display:flex;gap:8px;margin-left:10px;flex-shrink:0}
+.icon-btn{width:32px;height:32px;border-radius:50%;border:1px solid rgba(255,255,255,0.2);background:transparent;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.9em}
+.icon-btn:active{background:rgba(255,255,255,0.1)}
+.icon-btn.edit{border-color:rgba(76,175,80,0.5);color:#4CAF50}
+.icon-btn.delete{border-color:rgba(244,67,54,0.5);color:#F44336}
+.icon-btn.pay{border-color:rgba(33,150,243,0.5);color:#2196F3}
+.icon-btn.filter{border-color:rgba(156,39,176,0.5);color:#9C27B0}
+.modal-actions{display:flex;gap:12px;padding:20px;border-top:1px solid rgba(255,255,255,0.1);flex-shrink:0}
+.btn-modal{flex:1;padding:15px;border-radius:15px;font-size:0.95em;cursor:pointer;letter-spacing:1px}
+.btn-modal-cancel{border:1px solid rgba(255,255,255,0.3);background:transparent;color:#fff}
+.btn-modal-save{border:none;background:#fff;color:#000;font-weight:600}
+.empty-state{text-align:center;padding:30px 20px;opacity:0.4;font-size:0.85em}
+.toast{position:fixed;top:30px;left:50%;transform:translateX(-50%) translateY(-100px);background:#fff;color:#000;padding:15px 30px;border-radius:25px;z-index:2000;opacity:0;transition:all 0.3s;font-weight:500}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.forecast-item{padding:12px;background:rgba(255,255,255,0.03);border-radius:12px;margin-bottom:8px;border-left:3px solid var(--item-color);display:flex;align-items:center;gap:12px}
+.forecast-date{font-size:0.85em;font-weight:600;min-width:50px}
+.forecast-info{flex:1}
+.forecast-name{font-size:0.9em;margin-bottom:2px}
+.forecast-period{font-size:0.7em;opacity:0.5}
+.forecast-amount{font-size:1em;font-weight:300}
+.analytics-card{background:rgba(255,255,255,0.05);border-radius:15px;padding:15px;margin-bottom:12px;border:1px solid rgba(255,255,255,0.08)}
+.analytics-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.analytics-title{font-size:1em;font-weight:500}
+.analytics-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;font-size:0.85em}
+.analytics-stat{padding:8px;background:rgba(255,255,255,0.05);border-radius:10px}
+.analytics-stat-label{opacity:0.5;font-size:0.8em;margin-bottom:3px}
+.analytics-stat-value{font-weight:500}
+.trend-up{color:#4CAF50}
+.trend-down{color:#F44336}
+.trend-stable{color:#FFC107}
+.filter-bar{display:flex;gap:8px;margin-bottom:15px;flex-wrap:wrap}
+.filter-chip{padding:8px 14px;border-radius:20px;border:1px solid rgba(255,255,255,0.2);background:transparent;color:rgba(255,255,255,0.7);font-size:0.8em;cursor:pointer;transition:all 0.2s}
+.filter-chip.active{background:rgba(255,255,255,0.15);color:#fff;border-color:rgba(255,255,255,0.4)}
+.balance-change{font-size:0.75em;opacity:0.6;margin-top:2px}
+.data-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:20px}
+.data-btn{padding:15px;border-radius:15px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.05);color:#fff;font-size:0.9em;cursor:pointer;transition:all 0.2s;display:flex;flex-direction:column;align-items:center;gap:5px}
+.data-btn:active{background:rgba(255,255,255,0.1);transform:scale(0.98)}
+.data-btn-icon{font-size:1.5em}
+.data-btn-label{font-size:0.8em;opacity:0.7}
+.qr-container{text-align:center;padding:20px}
+.qr-container img{max-width:200px;border-radius:10px;background:#fff;padding:10px}
+.qr-hint{font-size:0.8em;opacity:0.5;margin-top:10px}
+@media(max-width:480px){.top-section{gap:10px}.drop-value{font-size:0.85em}.tab{font-size:0.65em;padding:10px 6px;min-width:60px}}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="header">AQUAFINANCE</div>
+<div class="top-section">
+<div class="main-drop" onclick="app.openModal('input')"><div class="drop-ring"></div><div class="drop-ring"></div><div class="drop-ring"></div><div class="drop-info"><div class="drop-icon">+</div><div class="drop-label">Доход</div><div class="drop-value" id="totalIncome">0 ₽</div></div></div>
+<div class="main-drop" onclick="app.openModal('input')"><div class="drop-ring"></div><div class="drop-ring"></div><div class="drop-ring"></div><div class="drop-info"><div class="drop-icon">−</div><div class="drop-label">Расход</div><div class="drop-value" id="totalExpense">0 ₽</div></div></div>
+<div class="main-drop" onclick="app.openModal('accounts')"><div class="drop-ring"></div><div class="drop-ring"></div><div class="drop-ring"></div><div class="drop-info"><div class="drop-icon">💧</div><div class="drop-label">Баланс</div><div class="drop-value" id="balance">0 ₽</div></div></div>
+</div>
+<div class="quick-input">
+<div class="input-row">
+<button class="btn-action btn-plus" onclick="app.quickAdd('income')">+</button>
+<input type="number" class="amount-input" id="quickAmount" placeholder="0" inputmode="numeric">
+<button class="btn-action btn-minus" onclick="app.quickAdd('expense')">−</button>
+</div>
+<div class="active-hint" id="activeHint"></div>
+</div>
+<div class="quick-tags">
+<div class="tags-label"><span>Счета</span><span class="add-tag-btn" onclick="app.addAccount()">+ счёт</span></div>
+<div class="tags-row" id="accountsRow"></div>
+<div class="tags-label"><span>Регулярные</span><span class="add-tag-btn" onclick="app.openModal('recurring')">+ шаблон</span></div>
+<div class="tags-row" id="recurringRow"></div>
+</div>
+<button class="open-modal-btn" onclick="app.openModal('input')">ПАНЕЛЬ УПРАВЛЕНИЯ</button>
+</div>
+
+<div class="modal-overlay" id="mainModal">
+<div class="modal-content">
+<div class="modal-handle"></div>
+<div class="modal-close-wrapper"><button class="modal-close" onclick="app.closeModal()">✕</button></div>
+<div class="tabs-container">
+<div class="tabs">
+<div class="tab active" data-tab="input" onclick="app.switchTab('input')">Ввод</div>
+<div class="tab" data-tab="accounts" onclick="app.switchTab('accounts')">Счета</div>
+<div class="tab" data-tab="recurring" onclick="app.switchTab('recurring')">Регулярные</div>
+<div class="tab" data-tab="history" onclick="app.switchTab('history')">История</div>
+<div class="tab" data-tab="analytics" onclick="app.switchTab('analytics')">Анализ</div>
+</div>
+</div>
+<div class="tab-content-wrapper">
+<div class="tab-content active" id="tab-input">
+<div class="tab-title">НОВАЯ ОПЕРАЦИЯ</div>
+<div class="input-type-selector">
+<button class="type-btn income active" onclick="app.selectType('income')">+ Доход</button>
+<button class="type-btn expense" onclick="app.selectType('expense')">− Расход</button>
+</div>
+<input type="number" class="input-amount" id="inputAmount" placeholder="0" inputmode="numeric">
+<div class="input-field-group"><div class="input-field-label">СЧЁТ</div><select class="select-field" id="inputAccount"></select></div>
+<div class="input-field-group"><div class="input-field-label">КАТЕГОРИЯ</div><select class="select-field" id="inputCategory"></select></div>
+<div class="input-field-group"><div class="input-field-label">ОПИСАНИЕ</div><input type="text" class="input-field" id="inputDescription" placeholder="Необязательно"></div>
+<button class="btn-submit income" id="btnSubmit" onclick="app.submitTransaction()">ДОБАВИТЬ ДОХОД</button>
+</div>
+<div class="tab-content" id="tab-accounts">
+<div class="tab-title">СЧЕТА</div>
+<button class="open-modal-btn" onclick="app.addAccount()" style="margin-bottom:15px">+ НОВЫЙ СЧЁТ</button>
+<div id="accountsList"></div>
+<div class="list-item" style="background:rgba(255,255,255,0.1);font-weight:600"><div class="list-info"><div class="list-name">ОБЩИЙ БАЛАНС</div></div><div class="list-value" id="modalTotalBalance">0 ₽</div></div>
+<div class="data-actions">
+<button class="data-btn" onclick="app.exportData()"><span class="data-btn-icon">📥</span><span class="data-btn-label">Экспорт</span></button>
+<button class="data-btn" onclick="app.importData()"><span class="data-btn-icon">📤</span><span class="data-btn-label">Импорт</span></button>
+<button class="data-btn" onclick="app.copyToClipboard()"><span class="data-btn-icon">📋</span><span class="data-btn-label">Копировать</span></button>
+<button class="data-btn" onclick="app.showQR()"><span class="data-btn-icon">QR</span><span class="data-btn-label">QR код</span></button>
+</div>
+</div>
+<div class="tab-content" id="tab-recurring">
+<div class="tab-title">РЕГУЛЯРНЫЕ ПЛАТЕЖИ</div>
+<button class="open-modal-btn" onclick="app.addRecurringFromModal()" style="margin-bottom:15px">+ НОВЫЙ ШАБЛОН</button>
+<div id="recurringList"></div>
+<div class="tab-title" style="margin-top:20px">ПРОГНОЗ НА 30 ДНЕЙ</div>
+<div id="forecastList"></div>
+<div class="list-item" style="background:rgba(255,255,255,0.1);font-weight:600;margin-top:10px"><div class="list-info"><div class="list-name">ИТОГО К ОПЛАТЕ</div></div><div class="list-value" id="forecastTotal">0 ₽</div></div>
+</div>
+<div class="tab-content" id="tab-history">
+<div class="tab-title">ИСТОРИЯ ОПЕРАЦИЙ</div>
+<div class="filter-bar" id="historyFilters"></div>
+<div id="historyList"></div>
+</div>
+<div class="tab-content" id="tab-analytics">
+<div class="tab-title">АНАЛИЗ РЕГУЛЯРНЫХ</div>
+<div class="filter-bar" id="analyticsFilters"></div>
+<div id="analyticsList"></div>
+</div>
+</div>
+<div class="modal-actions" id="modalActions" style="display:none">
+<button class="btn-modal btn-modal-cancel" onclick="app.closeModal()">Закрыть</button>
+<button class="btn-modal btn-modal-save" onclick="app.saveCurrentTab()">Сохранить</button>
+</div>
+</div>
+</div>
+
+<div class="modal-overlay" id="editModal">
+<div class="modal-content" style="height:70vh">
+<div class="modal-handle"></div>
+<div class="modal-close-wrapper"><button class="modal-close" onclick="app.closeEditModal()">✕</button></div>
+<div class="tab-content-wrapper" style="padding:25px 20px">
+<div class="tab-title" id="editTitle">РЕДАКТИРОВАТЬ</div>
+<div class="input-type-selector">
+<button class="type-btn income" id="editTypeIncome" onclick="app.setEditType('income')">+ Доход</button>
+<button class="type-btn expense" id="editTypeExpense" onclick="app.setEditType('expense')">− Расход</button>
+</div>
+<input type="number" class="input-amount" id="editAmount" placeholder="0" inputmode="numeric">
+<div class="input-field-group"><div class="input-field-label">СЧЁТ</div><select class="select-field" id="editAccount"></select></div>
+<div class="input-field-group"><div class="input-field-label">КАТЕГОРИЯ</div><select class="select-field" id="editCategory"></select></div>
+<div class="input-field-group"><div class="input-field-label">ОПИСАНИЕ</div><input type="text" class="input-field" id="editDescription" placeholder="Необязательно"></div>
+<button class="btn-submit income" id="btnEditSave" onclick="app.saveEdit()">СОХРАНИТЬ</button>
+</div>
+</div>
+</div>
+
+<div class="modal-overlay" id="qrModal">
+<div class="modal-content" style="height:auto">
+<div class="modal-handle"></div>
+<div class="modal-close-wrapper"><button class="modal-close" onclick="app.closeQR()">✕</button></div>
+<div class="tab-content-wrapper" style="padding:25px 20px">
+<div class="tab-title">QR КОД ДЛЯ ПЕРЕНОСА</div>
+<div class="qr-container">
+<img id="qrImage" src="" alt="QR">
+<div class="qr-hint">Отсканируйте камерой другого устройства</div>
+</div>
+</div>
+</div>
+</div>
+
+<input type="file" id="fileInput" accept=".json" style="display:none" onchange="app.handleFileImport(event)">
+
+<div class="toast" id="toast"></div>
+
+<script>
+const app={
+data:{
+income:[],expenses:[],
+accounts:[
+{id:'sber',name:'Сбер',icon:'',color:'#4CAF50',initialBalance:0},
+{id:'tinkoff',name:'Тинькофф',icon:'',color:'#FFC107',initialBalance:0},
+{id:'cash',name:'Наличные',icon:'',color:'#2196F3',initialBalance:0},
+{id:'alpha',name:'Альфа',icon:'',color:'#E91E63',initialBalance:0},
+{id:'yandex',name:'Яндекс',icon:'💳',color:'#FF6B6B',initialBalance:0}
+],
+recurring:[
+{id:'hair',name:'Парикмахер',icon:'',amount:1500,color:'#9C27B0',period:'month',lastPaid:null},
+{id:'internet',name:'Интернет',icon:'🌐',amount:700,color:'#03A9F4',period:'month',lastPaid:null},
+{id:'rent',name:'Аренда',icon:'🏠',amount:25000,color:'#FF5722',period:'month',lastPaid:null},
+{id:'mobile',name:'Связь',icon:'📱',amount:500,color:'#8BC34A',period:'month',lastPaid:null}
+],
+categories:[
+{id:'food',name:'Продукты',icon:''},
+{id:'cafe',name:'Кафе',icon:'☕'},
+{id:'fuel',name:'Топливо',icon:''},
+{id:'transport',name:'Транспорт',icon:''},
+{id:'housing',name:'Жильё',icon:'🏠'},
+{id:'utilities',name:'Коммуналка',icon:'💡'},
+{id:'mobile_internet',name:'Связь/Интернет',icon:'📱'},
+{id:'entertainment',name:'Развлечения',icon:'🎬'},
+{id:'health',name:'Здоровье',icon:'💊'},
+{id:'clothes',name:'Одежда',icon:''},
+{id:'gifts',name:'Подарки',icon:''},
+{id:'education',name:'Образование',icon:'📚'},
+{id:'sport',name:'Спорт',icon:'️'},
+{id:'pets',name:'Питомцы',icon:''},
+{id:'travel',name:'Путешествия',icon:'✈️'},
+{id:'salary',name:'Зарплата',icon:''},
+{id:'freelance',name:'Фриланс',icon:'💻'},
+{id:'investments',name:'Инвестиции',icon:''},
+{id:'loans',name:'Кредиты',icon:'🏦'},
+{id:'other',name:'Прочее',icon:''}
+]
+},
+activeAccount:'sber',activeRecurring:null,currentTab:'input',inputType:'income',
+editingId:null,editingType:null,editType:'income',
+historyFilter:{account:'all',type:'all'},
+analyticsPeriod:'month',
+
+init(){
+const saved=localStorage.getItem('aquaFinanceBW');
+if(saved){try{const l=JSON.parse(saved);this.data.income=l.income||[];this.data.expenses=l.expenses||[];this.data.accounts=l.accounts||this.data.accounts;this.data.recurring=l.recurring||this.data.recurring;this.data.categories=l.categories||this.data.categories}catch(e){console.error(e)}}
+this.renderAccounts();this.renderRecurring();this.updateAll();this.populateSelects();
+},
+
+getAccountBalance(id){
+const acc=this.data.accounts.find(a=>a.id===id);if(!acc)return 0;
+const inc=this.data.income.filter(t=>t.account===id).reduce((s,t)=>s+t.amount,0);
+const exp=this.data.expenses.filter(t=>t.account===id).reduce((s,t)=>s+t.amount,0);
+return(acc.initialBalance||0)+inc-exp;
+},
+getTotalBalance(){return this.data.accounts.reduce((s,a)=>s+this.getAccountBalance(a.id),0)},
+
+renderAccounts(){
+const row=document.getElementById('accountsRow');row.innerHTML='';
+this.data.accounts.forEach(acc=>{
+const bal=this.getAccountBalance(acc.id);
+const tag=document.createElement('div');
+tag.className='tag account'+(acc.id===this.activeAccount?' active':'');
+tag.style.setProperty('--tag-color',acc.color);
+tag.innerHTML=`<span class="tag-dot" style="background:${acc.color}"></span>${acc.name}<span class="tag-balance">${this.formatMoneyShort(bal)}</span>`;
+tag.onclick=()=>{this.selectAccount(acc.id)};
+row.appendChild(tag);
+});
+this.updateHint();
+},
+
+renderRecurring(){
+const row=document.getElementById('recurringRow');row.innerHTML='';
+this.data.recurring.forEach(r=>{
+const tag=document.createElement('div');
+tag.className='tag recurring'+(r.id===this.activeRecurring?' active':'');
+tag.style.setProperty('--tag-color',r.color);
+tag.innerHTML=`${r.name} · ${this.formatMoney(r.amount)}`;
+tag.onclick=()=>{this.selectRecurring(r.id)};
+row.appendChild(tag);
+});
+},
+
+selectAccount(id){this.activeAccount=id;this.renderAccounts();this.populateSelects()},
+selectRecurring(id){
+const r=this.data.recurring.find(x=>x.id===id);if(!r)return;
+if(this.activeRecurring===id){this.activeRecurring=null}
+else{this.activeRecurring=id;document.getElementById('quickAmount').value=r.amount}
+this.renderRecurring();this.updateHint();
+},
+
+updateHint(){
+const h=document.getElementById('activeHint');
+const acc=this.data.accounts.find(a=>a.id===this.activeAccount);
+const rec=this.activeRecurring?this.data.recurring.find(r=>r.id===this.activeRecurring):null;
+let t='';if(acc)t+=`→ ${acc.name}`;if(rec)t+=` · ${rec.name}`;
+h.textContent=t;
+},
+
+updateAll(){this.updateTotals();this.renderAccounts();this.renderRecurring()},
+updateTotals(){
+const ti=this.data.income.reduce((s,i)=>s+i.amount,0);
+const te=this.data.expenses.reduce((s,i)=>s+i.amount,0);
+document.getElementById('totalIncome').textContent=this.formatMoney(ti);
+document.getElementById('totalExpense').textContent=this.formatMoney(te);
+document.getElementById('balance').textContent=this.formatMoney(this.getTotalBalance());
+},
+
+populateSelects(){
+['inputAccount','editAccount'].forEach(id=>{
+const s=document.getElementById(id);if(!s)return;s.innerHTML='';
+this.data.accounts.forEach(a=>{const o=document.createElement('option');o.value=a.id;o.textContent=a.name;if(a.id===this.activeAccount)o.selected=true;s.appendChild(o)});
+});
+['inputCategory','editCategory'].forEach(id=>{
+const s=document.getElementById(id);if(!s)return;s.innerHTML='';
+this.data.categories.forEach(c=>{const o=document.createElement('option');o.value=c.id;o.textContent=c.name;s.appendChild(o)});
+});
+},
+
+quickAdd(type){
+const amount=parseInt(document.getElementById('quickAmount').value);
+if(!amount||amount<=0){this.showToast('⚠️ Введите сумму');return}
+let cat='other',desc=type==='income'?'Доход':'Расход';
+if(this.activeRecurring){const r=this.data.recurring.find(x=>x.id===this.activeRecurring);if(r){desc=r.name;cat='services'}}
+else if(type==='income')cat='salary';
+
+const balBefore=this.getAccountBalance(this.activeAccount);
+const trans={id:Date.now(),amount,category:cat,description:desc,account:this.activeAccount,date:new Date().toISOString(),balanceBefore:balBefore,balanceAfter:balBefore+(type==='income'?amount:-amount)};
+
+if(type==='income'){this.data.income.push(trans);this.showToast(`+ ${this.formatMoney(amount)}`)}
+else{this.data.expenses.push(trans);this.showToast(`− ${this.formatMoney(amount)}`)}
+
+this.save();this.updateAll();
+document.getElementById('quickAmount').value='';
+this.activeRecurring=null;this.renderRecurring();this.updateHint();
+},
+
+openModal(tab){this.currentTab=tab;document.getElementById('mainModal').classList.add('active');this.switchTab(tab)},
+closeModal(){document.getElementById('mainModal').classList.remove('active')},
+
+switchTab(tab){
+this.currentTab=tab;
+document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+const te=document.querySelector(`.tab[data-tab="${tab}"]`);if(te)te.classList.add('active');
+document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+document.getElementById(`tab-${tab}`).classList.add('active');
+if(tab==='accounts')this.renderAccountsTab();
+else if(tab==='recurring'){this.renderRecurringTab();this.renderForecast()}
+else if(tab==='history')this.renderHistoryTab();
+else if(tab==='analytics')this.renderAnalyticsTab();
+else if(tab==='input')this.populateSelects();
+document.getElementById('modalActions').style.display=(tab==='accounts')?'flex':'none';
+},
+
+selectType(type){
+this.inputType=type;
+document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('active'));
+document.querySelector(`.type-btn.${type}`).classList.add('active');
+const b=document.getElementById('btnSubmit');b.className=`btn-submit ${type}`;
+b.textContent=type==='income'?'ДОБАВИТЬ ДОХОД':'ДОБАВИТЬ РАСХОД';
+},
+
+submitTransaction(){
+const amount=parseInt(document.getElementById('inputAmount').value);
+const account=document.getElementById('inputAccount').value;
+const category=document.getElementById('inputCategory').value;
+const description=document.getElementById('inputDescription').value;
+if(!amount||amount<=0){this.showToast('⚠️ Введите сумму');return}
+
+const balBefore=this.getAccountBalance(account);
+const trans={id:Date.now(),amount,category,description:description||(this.inputType==='income'?'Доход':'Расход'),account,date:new Date().toISOString(),balanceBefore:balBefore,balanceAfter:balBefore+(this.inputType==='income'?amount:-amount)};
+
+if(this.inputType==='income'){this.data.income.push(trans);this.showToast(`+ ${this.formatMoney(amount)}`)}
+else{this.data.expenses.push(trans);this.showToast(`− ${this.formatMoney(amount)}`)}
+
+this.save();this.updateAll();
+document.getElementById('inputAmount').value='';document.getElementById('inputDescription').value='';
+this.activeRecurring=null;this.renderRecurring();this.updateHint();
+},
+
+renderAccountsTab(){
+const list=document.getElementById('accountsList');list.innerHTML='';
+this.data.accounts.forEach(acc=>{
+const inc=this.data.income.filter(t=>t.account===acc.id).reduce((s,t)=>s+t.amount,0);
+const exp=this.data.expenses.filter(t=>t.account===acc.id).reduce((s,t)=>s+t.amount,0);
+const bal=this.getAccountBalance(acc.id);
+const row=document.createElement('div');row.className='list-item';
+row.innerHTML=`<div class="list-icon" style="background:${acc.color}20;color:${acc.color}">${acc.icon}</div><div class="list-info"><div class="list-name">${acc.name}</div><div class="list-detail">+${this.formatMoney(inc)} / −${this.formatMoney(exp)}</div></div><input type="number" class="list-input" data-account-id="${acc.id}" value="${bal}" placeholder="0" inputmode="numeric"><button class="icon-btn filter" onclick="app.filterByAccount('${acc.id}')" title="История по счёту">📋</button>`;
+list.appendChild(row);
+});
+document.getElementById('modalTotalBalance').textContent=this.formatMoney(this.getTotalBalance());
+},
+
+renderRecurringTab(){
+const list=document.getElementById('recurringList');list.innerHTML='';
+if(this.data.recurring.length===0){list.innerHTML='<div class="empty-state">Нет регулярных платежей</div>';return}
+this.data.recurring.forEach(r=>{
+const nd=this.getNextPaymentDate(r);
+const ds=nd?`${nd.getDate()}.${String(nd.getMonth()+1).padStart(2,'0')}.${nd.getFullYear()}`:'—';
+const row=document.createElement('div');row.className='list-item';row.style.borderLeft=`3px solid ${r.color}`;
+row.innerHTML=`<div class="list-icon" style="background:${r.color}20;color:${r.color}">${r.icon}</div><div class="list-info"><div class="list-name">${r.name}</div><div class="list-detail">${this.getPeriodName(r.period)} · След: ${ds}</div></div><div class="list-value">${this.formatMoney(r.amount)}</div><div class="action-btns"><button class="icon-btn pay" onclick="app.payRecurring('${r.id}')">✓</button><button class="icon-btn edit" onclick="app.editRecurring('${r.id}')">✎</button><button class="icon-btn delete" onclick="app.deleteRecurring('${r.id}')">✕</button></div>`;
+list.appendChild(row);
+});
+},
+
+renderForecast(){
+const list=document.getElementById('forecastList');list.innerHTML='';
+const now=new Date();const in30=new Date(now.getTime()+30*24*60*60*1000);
+let total=0;const items=[];
+this.data.recurring.forEach(r=>{
+let next=this.getNextPaymentDate(r);
+while(next<=in30){
+items.push({name:r.name,icon:r.icon,color:r.color,amount:r.amount,date:new Date(next),period:r.period});
+total+=r.amount;
+const nn=new Date(next);
+switch(r.period){case'week':nn.setDate(nn.getDate()+7);break;case'2weeks':nn.setDate(nn.getDate()+14);break;case'month':nn.setMonth(nn.getMonth()+1);break;case'quarter':nn.setMonth(nn.getMonth()+3);break;case'year':nn.setFullYear(nn.getFullYear()+1);break}
+next=nn;
+}
+});
+items.sort((a,b)=>a.date-b.date);
+if(items.length===0){list.innerHTML='<div class="empty-state">Нет платежей в ближайшие 30 дней</div>'}
+else{
+items.forEach(it=>{
+const el=document.createElement('div');el.className='forecast-item';el.style.setProperty('--item-color',it.color);
+el.innerHTML=`<div class="forecast-date">${it.date.getDate()}.${String(it.date.getMonth()+1).padStart(2,'0')}</div><div class="forecast-info"><div class="forecast-name">${it.icon} ${it.name}</div><div class="forecast-period">${this.getPeriodName(it.period)}</div></div><div class="forecast-amount">${this.formatMoney(it.amount)}</div>`;
+list.appendChild(el);
+});
+}
+document.getElementById('forecastTotal').textContent=this.formatMoney(total);
+},
+
+addRecurringFromModal(){
+const name=prompt('Название:');if(!name)return;
+const amount=parseInt(prompt('Сумма (₽):','500'));if(!amount||amount<=0){this.showToast('⚠️ Введите сумму');return}
+
+const periodSelect=document.createElement('select');
+periodSelect.className='select-field';
+periodSelect.innerHTML=`<option value="week">Неделя</option><option value="2weeks">2 недели</option><option value="month" selected>Месяц</option><option value="quarter">Квартал</option><option value="year">Год</option>`;
+
+const modal=document.createElement('div');
+modal.className='modal-overlay active';
+modal.innerHTML=`<div class="modal-content" style="height:auto;padding:30px 20px"><div class="tab-title">ПЕРИОДИЧНОСТЬ</div><div id="periodSelectContainer"></div><div class="modal-actions"><button class="btn-modal btn-modal-cancel" onclick="this.closest('.modal-overlay').remove()">Отмена</button><button class="btn-modal btn-modal-save" id="confirmPeriod">Добавить</button></div></div>`;
+document.body.appendChild(modal);
+document.getElementById('periodSelectContainer').appendChild(periodSelect);
+
+document.getElementById('confirmPeriod').onclick=()=>{
+const period=periodSelect.value;
+const icons=['📦','','⭐','',''];const colors=['#9C27B0','#03A9F4','#FF5722','#8BC34A','#FFC107'];
+const idx=this.data.recurring.length;
+this.data.recurring.push({id:'rec_'+Date.now(),name,icon:icons[idx%icons.length],amount,color:colors[idx%colors.length],period,lastPaid:null});
+this.save();this.renderRecurring();this.renderRecurringTab();this.renderForecast();
+modal.remove();
+this.showToast(`✅ "${name}" добавлен`);
+};
+},
+
+getNextPaymentDate(r){
+if(!r.lastPaid)return new Date();
+const last=new Date(r.lastPaid);const next=new Date(last);
+switch(r.period){case'week':next.setDate(next.getDate()+7);break;case'2weeks':next.setDate(next.getDate()+14);break;case'month':next.setMonth(next.getMonth()+1);break;case'quarter':next.setMonth(next.getMonth()+3);break;case'year':next.setFullYear(next.getFullYear()+1);break}
+return next;
+},
+getPeriodName(p){return{week:'Неделя','2weeks':'2 недели',month:'Месяц',quarter:'Квартал',year:'Год'}[p]||p},
+
+payRecurring(id){
+const r=this.data.recurring.find(x=>x.id===id);if(!r)return;
+if(!confirm(`Оплатить "${r.name}" ${this.formatMoney(r.amount)}?`))return;
+const balBefore=this.getAccountBalance(this.activeAccount);
+this.data.expenses.push({id:Date.now(),amount:r.amount,category:'services',description:r.name,account:this.activeAccount,recurringId:r.id,date:new Date().toISOString(),balanceBefore:balBefore,balanceAfter:balBefore-r.amount});
+r.lastPaid=new Date().toISOString();
+this.save();this.updateAll();this.renderRecurringTab();this.renderForecast();
+this.showToast(`✅ Оплачено: ${this.formatMoney(r.amount)}`);
+},
+
+editRecurring(id){
+const r=this.data.recurring.find(x=>x.id===id);if(!r)return;
+const name=prompt('Название:',r.name);if(!name)return;
+const amount=parseInt(prompt('Сумма (₽):',r.amount));if(!amount||amount<=0)return;
+
+const periodSelect=document.createElement('select');
+periodSelect.className='select-field';
+periodSelect.innerHTML=`<option value="week"${r.period==='week'?' selected':''}>Неделя</option><option value="2weeks"${r.period==='2weeks'?' selected':''}>2 недели</option><option value="month"${r.period==='month'?' selected':''}>Месяц</option><option value="quarter"${r.period==='quarter'?' selected':''}>Квартал</option><option value="year"${r.period==='year'?' selected':''}>Год</option>`;
+
+const modal=document.createElement('div');
+modal.className='modal-overlay active';
+modal.innerHTML=`<div class="modal-content" style="height:auto;padding:30px 20px"><div class="tab-title">ПЕРИОДИЧНОСТЬ</div><div id="periodSelectContainer"></div><div class="modal-actions"><button class="btn-modal btn-modal-cancel" onclick="this.closest('.modal-overlay').remove()">Отмена</button><button class="btn-modal btn-modal-save" id="confirmPeriod">Сохранить</button></div></div>`;
+document.body.appendChild(modal);
+document.getElementById('periodSelectContainer').appendChild(periodSelect);
+
+document.getElementById('confirmPeriod').onclick=()=>{
+r.name=name;r.amount=amount;r.period=periodSelect.value;
+this.save();this.renderRecurring();this.renderRecurringTab();this.renderForecast();
+modal.remove();
+this.showToast('✅ Обновлено');
+};
+},
+
+deleteRecurring(id){
+if(!confirm('Удалить?'))return;
+this.data.recurring=this.data.recurring.filter(r=>r.id!==id);
+this.save();this.renderRecurring();this.renderRecurringTab();this.renderForecast();
+this.showToast('✅ Удалено');
+},
+
+renderHistoryTab(){
+const fb=document.getElementById('historyFilters');fb.innerHTML='';
+const types=[{id:'all',name:'Все'},{id:'income',name:'Доходы'},{id:'expense',name:'Расходы'}];
+types.forEach(t=>{
+const c=document.createElement('button');c.className='filter-chip'+(this.historyFilter.type===t.id?' active':'');
+c.textContent=t.name;c.onclick=()=>{this.historyFilter.type=t.id;this.renderHistoryTab()};fb.appendChild(c);
+});
+const accFilter=document.createElement('select');accFilter.className='select-field';accFilter.style.cssText='padding:8px 12px;font-size:0.8em;min-width:120px';
+const ao=document.createElement('option');ao.value='all';ao.textContent='Все счета';accFilter.appendChild(ao);
+this.data.accounts.forEach(a=>{const o=document.createElement('option');o.value=a.id;o.textContent=a.name;if(this.historyFilter.account===a.id)o.selected=true;accFilter.appendChild(o)});
+accFilter.onchange=()=>{this.historyFilter.account=accFilter.value;this.renderHistoryTab()};
+fb.appendChild(accFilter);
+
+const list=document.getElementById('historyList');list.innerHTML='';
+let all=[...this.data.income.map(t=>({...t,type:'income'})),...this.data.expenses.map(t=>({...t,type:'expense'}))];
+all.sort((a,b)=>new Date(b.date)-new Date(a.date));
+if(this.historyFilter.type!=='all')all=all.filter(t=>t.type===this.historyFilter.type);
+if(this.historyFilter.account!=='all')all=all.filter(t=>t.account===this.historyFilter.account);
+
+if(all.length===0){list.innerHTML='<div class="empty-state">Нет операций</div>';return}
+all.forEach(t=>{
+const cat=this.data.categories.find(c=>c.id===t.category);
+const acc=this.data.accounts.find(a=>a.id===t.account);
+const d=new Date(t.date);const ds=`${d.getDate()}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
+const row=document.createElement('div');row.className='list-item';
+row.innerHTML=`<div class="list-icon">${cat?cat.icon:'📦'}</div><div class="list-info"><div class="list-name">${t.description}</div><div class="list-detail">${acc?acc.name:''}${acc?' · ':''}${ds}</div><div class="balance-change">Было: ${this.formatMoney(t.balanceBefore||0)} → Стало: ${this.formatMoney(t.balanceAfter||0)}</div></div><div class="list-value" style="color:${t.type==='income'?'#4CAF50':'#F44336'}">${t.type==='income'?'+':'−'}${this.formatMoney(t.amount)}</div><div class="action-btns"><button class="icon-btn edit" onclick="app.openEdit('${t.id}','${t.type}')">✎</button><button class="icon-btn delete" onclick="app.deleteTransaction('${t.id}','${t.type}')">✕</button></div>`;
+list.appendChild(row);
+});
+},
+
+filterByAccount(id){
+this.historyFilter.account=id;this.historyFilter.type='all';
+this.openModal('history');
+},
+
+renderAnalyticsTab(){
+const fb=document.getElementById('analyticsFilters');fb.innerHTML='';
+const periods=[{id:'month',name:'Месяц'},{id:'3months',name:'3 мес'},{id:'6months',name:'6 мес'},{id:'year',name:'Год'},{id:'all',name:'Всё'}];
+periods.forEach(p=>{
+const c=document.createElement('button');c.className='filter-chip'+(this.analyticsPeriod===p.id?' active':'');
+c.textContent=p.name;c.onclick=()=>{this.analyticsPeriod=p.id;this.renderAnalyticsTab()};fb.appendChild(c);
+});
+
+const list=document.getElementById('analyticsList');list.innerHTML='';
+const now=new Date();let cutoff=new Date();
+switch(this.analyticsPeriod){case'month':cutoff.setMonth(cutoff.getMonth()-1);break;case'3months':cutoff.setMonth(cutoff.getMonth()-3);break;case'6months':cutoff.setMonth(cutoff.getMonth()-6);break;case'year':cutoff.setFullYear(cutoff.getFullYear()-1);break;default:cutoff=new Date(0)}
+
+const expenses=this.data.expenses.filter(e=>new Date(e.date)>=cutoff);
+const grouped={};
+expenses.forEach(e=>{
+if(!grouped[e.description])grouped[e.description]={name:e.description,icon:'',color:'#fff',amounts:[],dates:[],total:0,count:0};
+grouped[e.description].amounts.push(e.amount);
+grouped[e.description].dates.push(new Date(e.date));
+grouped[e.description].total+=e.amount;
+grouped[e.description].count++;
+if(!grouped[e.description].icon){const cat=this.data.categories.find(c=>c.id===e.category);if(cat)grouped[e.description].icon=cat.icon}
+});
+
+const sorted=Object.values(grouped).sort((a,b)=>b.total-a.total);
+if(sorted.length===0){list.innerHTML='<div class="empty-state">Нет данных для анализа</div>';return}
+
+sorted.forEach(g=>{
+const avg=g.total/g.count;
+const min=Math.min(...g.amounts);
+const max=Math.max(...g.amounts);
+const lastDate=g.dates.sort((a,b)=>b-a)[0];
+const firstDate=g.dates.sort((a,b)=>a-b)[0];
+const daysDiff=Math.max(1,Math.ceil((lastDate-firstDate)/(1000*60*60*24)));
+const frequency=(g.count/daysDiff*30).toFixed(1);
+let trend='trend-stable',trendText='→ стабильно';
+if(g.amounts.length>=2){
+const firstHalf=g.amounts.slice(0,Math.floor(g.amounts.length/2)).reduce((a,b)=>a+b,0)/(Math.floor(g.amounts.length/2));
+const secondHalf=g.amounts.slice(Math.floor(g.amounts.length/2)).reduce((a,b)=>a+b,0)/(g.amounts.length-Math.floor(g.amounts.length/2));
+if(secondHalf>firstHalf*1.1){trend='trend-up';trendText='↑ рост'}
+else if(secondHalf<firstHalf*0.9){trend='trend-down';trendText='↓ падение'}
+}
+const nextPay=new Date(lastDate);nextPay.setDate(nextPay.getDate()+Math.round(daysDiff/g.count));
+
+const card=document.createElement('div');card.className='analytics-card';
+card.innerHTML=`<div class="analytics-header"><div class="list-icon">${g.icon}</div><div class="analytics-title">${g.name}</div></div><div class="analytics-stats"><div class="analytics-stat"><div class="analytics-stat-label">Покупок</div><div class="analytics-stat-value">${g.count} раз</div></div><div class="analytics-stat"><div class="analytics-stat-label">Всего</div><div class="analytics-stat-value">${this.formatMoney(g.total)}</div></div><div class="analytics-stat"><div class="analytics-stat-label">Средняя</div><div class="analytics-stat-value">${this.formatMoney(Math.round(avg))}</div></div><div class="analytics-stat"><div class="analytics-stat-label">Мин/Макс</div><div class="analytics-stat-value">${this.formatMoney(min)} / ${this.formatMoney(max)}</div></div><div class="analytics-stat"><div class="analytics-stat-label">Частота</div><div class="analytics-stat-value">${frequency} раз/мес</div></div><div class="analytics-stat"><div class="analytics-stat-label">Динамика</div><div class="analytics-stat-value ${trend}">${trendText}</div></div><div class="analytics-stat"><div class="analytics-stat-label">Последняя</div><div class="analytics-stat-value">${lastDate.getDate()}.${String(lastDate.getMonth()+1).padStart(2,'0')}</div></div><div class="analytics-stat"><div class="analytics-stat-label">Следующая ≈</div><div class="analytics-stat-value">${nextPay.getDate()}.${String(nextPay.getMonth()+1).padStart(2,'0')}</div></div></div>`;
+list.appendChild(card);
+});
+},
+
+openEdit(id,type){
+this.editingId=id;this.editingType=type;
+const trans=type==='income'?this.data.income.find(t=>t.id==id):this.data.expenses.find(t=>t.id==id);
+if(!trans)return;
+this.editType=type;
+document.getElementById('editTitle').textContent='РЕДАКТИРОВАТЬ';
+document.getElementById('editAmount').value=trans.amount;
+document.getElementById('editDescription').value=trans.description;
+this.populateSelects();
+document.getElementById('editAccount').value=trans.account;
+document.getElementById('editCategory').value=trans.category;
+this.setEditType(type);
+document.getElementById('editModal').classList.add('active');
+},
+
+setEditType(type){
+this.editType=type;
+document.getElementById('editTypeIncome').classList.toggle('active',type==='income');
+document.getElementById('editTypeExpense').classList.toggle('active',type==='expense');
+const b=document.getElementById('btnEditSave');b.className=`btn-submit ${type}`;
+b.textContent=type==='income'?'СОХРАНИТЬ ДОХОД':'СОХРАНИТЬ РАСХОД';
+},
+
+saveEdit(){
+const amount=parseInt(document.getElementById('editAmount').value);
+const account=document.getElementById('editAccount').value;
+const category=document.getElementById('editCategory').value;
+const description=document.getElementById('editDescription').value;
+if(!amount||amount<=0){this.showToast('⚠️ Введите сумму');return}
+
+const transList=this.editingType==='income'?this.data.income:this.data.expenses;
+const trans=transList.find(t=>t.id==this.editingId);
+if(trans){
+const balBefore=this.getAccountBalance(trans.account);
+trans.amount=amount;trans.account=account;trans.category=category;
+trans.description=description||(this.editType==='income'?'Доход':'Расход');
+trans.balanceBefore=balBefore;trans.balanceAfter=balBefore+(this.editType==='income'?amount:-amount);
+}
+if(this.editType!==this.editingType){
+const oldList=this.editingType==='income'?this.data.income:this.data.expenses;
+const newList=this.editType==='income'?this.data.income:this.data.expenses;
+const idx=oldList.findIndex(t=>t.id==this.editingId);
+if(idx!==-1){const[moved]=oldList.splice(idx,1);newList.push(moved)}
+}
+this.save();this.updateAll();this.closeEditModal();this.renderHistoryTab();
+this.showToast('✅ Обновлено');
+},
+
+closeEditModal(){document.getElementById('editModal').classList.remove('active')},
+
+deleteTransaction(id,type){
+if(!confirm('Удалить?'))return;
+if(type==='income')this.data.income=this.data.income.filter(t=>t.id!=id);
+else this.data.expenses=this.data.expenses.filter(t=>t.id!=id);
+this.save();this.updateAll();this.renderHistoryTab();this.showToast('✅ Удалено');
+},
+
+saveCurrentTab(){
+if(this.currentTab==='accounts'){
+document.querySelectorAll('#accountsList .list-input').forEach(input=>{
+const accId=input.dataset.accountId;const acc=this.data.accounts.find(a=>a.id===accId);
+if(acc){const nb=parseInt(input.value)||0;const inc=this.data.income.filter(t=>t.account===accId).reduce((s,t)=>s+t.amount,0);const exp=this.data.expenses.filter(t=>t.account===accId).reduce((s,t)=>s+t.amount,0);acc.initialBalance=nb-inc+exp}
+});
+this.showToast('✅ Балансы обновлены');
+}
+this.save();this.updateAll();this.closeModal();
+},
+
+addAccount(){
+const name=prompt('Название счёта:');if(!name)return;
+const colors=['#4CAF50','#FFC107','#2196F3','#E91E63','#9C27B0','#FF5722','#03A9F4','#8BC34A','#FF6B6B'];
+this.data.accounts.push({id:'acc_'+Date.now(),name,icon:'',color:colors[this.data.accounts.length%colors.length],initialBalance:0});
+this.save();this.renderAccounts();this.populateSelects();
+if(this.currentTab==='accounts')this.renderAccountsTab();
+this.showToast(`✅ "${name}" добавлен`);
+},
+
+exportData(){
+const dataStr=JSON.stringify(this.data,null,2);
+const blob=new Blob([dataStr],{type:'application/json'});
+const url=URL.createObjectURL(blob);
+const a=document.createElement('a');
+a.href=url;
+a.download=`aqua-finance-backup-${new Date().toISOString().split('T')[0]}.json`;
+a.click();
+URL.revokeObjectURL(url);
+this.showToast('✅ Данные экспортированы');
+},
+
+importData(){
+document.getElementById('fileInput').click();
+},
+
+handleFileImport(event){
+const file=event.target.files[0];
+if(!file)return;
+const reader=new FileReader();
+reader.onload=(e)=>{
+try{
+const imported=JSON.parse(e.target.result);
+if(!imported.accounts||!imported.categories){
+this.showToast('⚠️ Неверный формат файла');
+return;
+}
+if(!confirm('Заменить текущие данные импортированными?'))return;
+this.data=imported;
+this.save();
+this.renderAccounts();
+this.renderRecurring();
+this.updateAll();
+this.populateSelects();
+this.showToast('✅ Данные импортированы');
+}catch(err){
+this.showToast('⚠️ Ошибка чтения файла');
+}
+};
+reader.readAsText(file);
+event.target.value='';
+},
+
+copyToClipboard(){
+const dataStr=JSON.stringify(this.data);
+const base64=btoa(unescape(encodeURIComponent(dataStr)));
+navigator.clipboard.writeText(base64).then(()=>{
+this.showToast('✅ Скопировано в буфер обмена');
+}).catch(()=>{
+this.showToast('⚠️ Не удалось скопировать');
+});
+},
+
+showQR(){
+const dataStr=JSON.stringify(this.data);
+const base64=btoa(unescape(encodeURIComponent(dataStr)));
+if(base64.length > 2000){
+this.showToast('⚠️ Данные слишком большие для QR');
+return;
+}
+const qrUrl=`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(base64)}`;
+const img=document.getElementById('qrImage');
+img.src='';
+img.onload=()=>{
+document.getElementById('qrModal').classList.add('active');
+};
+img.onerror=()=>{
+this.showToast('❌ Ошибка генерации QR');
+};
+img.src=qrUrl;
+},
+
+closeQR(){
+document.getElementById('qrModal').classList.remove('active');
+},
+
+save(){try{localStorage.setItem('aquaFinanceBW',JSON.stringify(this.data))}catch(e){console.error(e)}},
+formatMoney(a){return new Intl.NumberFormat('ru-RU').format(a)+' ₽'},
+formatMoneyShort(a){if(Math.abs(a)>=1e6)return(a/1e6).toFixed(1)+'М';if(Math.abs(a)>=1e3)return(a/1e3).toFixed(1)+'К';return a+'₽'},
+showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000)}
+};
+
+document.addEventListener('DOMContentLoaded',()=>app.init());
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js')
+      .then(reg => console.log('SW зарегистрирован'))
+      .catch(err => console.log('SW ошибка:', err));
+  });
+}
+</script>
+</body>
+</html>
