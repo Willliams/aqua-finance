@@ -167,7 +167,7 @@
 
   <!-- ACCOUNTS -->
   <section class="screen" id="screen-accounts">
-    <div class="section-title"><span>Счета</span><span id="accountsTotal" style="color:var(--faint); font-size:10px;"></span></div>
+    <div class="section-title"><span id="accountsTitleTap">Счета</span><span id="accountsTotal" style="color:var(--faint); font-size:10px;"></span></div>
     <div class="card" style="padding:4px 14px;" id="accountsList"></div>
     <button class="addbtn" id="addAccountBtn">+ добавить счёт</button>
   </section>
@@ -226,6 +226,20 @@
 
 <!-- Sheets / modals -->
 <div class="overlay" id="overlay"><div class="sheet" id="sheetContent"></div></div>
+
+<!-- Easter egg game -->
+<div class="overlay" id="gameOverlay">
+  <div class="sheet" id="gameSheet">
+    <button class="close-x" data-action="closeGame">✕</button>
+    <h2>Побег по чеку</h2>
+    <div style="text-align:center; font-size:10px; color:var(--muted); margin-bottom:8px;">тап по полю или пробел — прыжок</div>
+    <canvas id="gameCanvas" width="380" height="150" style="width:100%; display:block; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); touch-action:none;"></canvas>
+    <div style="display:flex; justify-content:space-between; font-size:11px; margin-top:10px;">
+      <span>Счёт: <b id="gameScore">0</b></span>
+      <span id="gameStatus" style="color:var(--muted);">тапни, чтобы начать</span>
+    </div>
+  </div>
+</div>
 
 <script>
 /* ---------- state ---------- */
@@ -350,7 +364,7 @@ function renderReminders(){
 function renderAccounts(){
   const total = state.accounts.reduce((s,a)=>s+a.balance,0);
   document.getElementById('accountsTotal').textContent = 'итого ' + fmt(total) + ' ₽';
-  document.getElementById('accountsList').innerHTML = state.accounts.map(a=>`
+  const rows = state.accounts.map(a=>`
     <div class="row">
       <div class="left"><div><div class="name">${a.name}</div><div class="sub">${a.type==='cash'?'наличные':'карта'}</div></div></div>
       <div style="display:flex; align-items:center; gap:8px;">
@@ -359,6 +373,8 @@ function renderAccounts(){
         <span class="receipt-icon" data-action="deleteAccount" data-id="${a.id}" style="border-color:var(--danger); color:var(--danger);">✕</span>
       </div>
     </div>`).join('');
+  const totalRow = state.accounts.length ? `<div class="total-row"><span>ИТОГО</span><span>${fmt(total)} ₽</span></div>` : '';
+  document.getElementById('accountsList').innerHTML = rows + totalRow;
 }
 
 /* ---------- render: history ---------- */
@@ -931,6 +947,181 @@ document.addEventListener('change', e=>{
 function applyTheme(){
   document.body.classList.toggle('dark', state.settings.theme==='dark');
   document.body.classList.toggle('eink', state.settings.style==='eink');
+}
+
+/* ---------- easter egg: runner game ---------- */
+let eggTapCount = 0;
+let eggTapTimer = null;
+document.getElementById('accountsTitleTap').addEventListener('click', ()=>{
+  eggTapCount++;
+  clearTimeout(eggTapTimer);
+  eggTapTimer = setTimeout(()=>{ eggTapCount = 0; }, 1200);
+  if(eggTapCount >= 5){
+    eggTapCount = 0;
+    openGame();
+  }
+});
+document.getElementById('gameOverlay').addEventListener('click', e=>{
+  if(e.target.id === 'gameOverlay' || e.target.dataset.action==='closeGame') closeGame();
+});
+
+let game = null;
+function openGame(){
+  document.getElementById('gameOverlay').classList.add('open');
+  initGame();
+}
+function closeGame(){
+  document.getElementById('gameOverlay').classList.remove('open');
+  if(game){ game.running = false; if(game.raf) cancelAnimationFrame(game.raf); }
+}
+
+function initGame(){
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const groundY = H - 22;
+
+  game = {
+    running: false, started: false, gameOver: false,
+    player: { x: 26, y: groundY-28, w:16, h:28, vy:0, jumping:false, frame:0 },
+    obstacles: [], speed: 3.2, score: 0, spawnTimer: 0, raf: null
+  };
+
+  const scoreEl = document.getElementById('gameScore');
+  const statusEl = document.getElementById('gameStatus');
+  scoreEl.textContent = '0';
+  statusEl.textContent = 'тапни, чтобы начать';
+
+  function colors(){
+    const cs = getComputedStyle(document.body);
+    return { text: cs.getPropertyValue('--text').trim() || '#1c1b19', border: cs.getPropertyValue('--border').trim() || '#999' };
+  }
+
+  function jump(){
+    const p = game.player;
+    if(!p.jumping){ p.vy = -7.4; p.jumping = true; }
+  }
+  function start(){
+    game.started = true; game.running = true; game.gameOver = false;
+    statusEl.textContent = '';
+    loop();
+  }
+  function handleTap(){
+    if(game.gameOver){ initGame(); return; }
+    if(!game.started){ start(); return; }
+    jump();
+  }
+  canvas.onclick = handleTap;
+  const keyHandler = (e)=>{
+    if(e.code === 'Space'){ e.preventDefault(); handleTap(); }
+  };
+  document.removeEventListener('keydown', window.__eggKeyHandler || (()=>{}));
+  window.__eggKeyHandler = keyHandler;
+  document.addEventListener('keydown', keyHandler);
+
+  function spawn(){
+    const h = 20 + Math.random()*12;
+    game.obstacles.push({ x: W, y: groundY-h, w:9, h });
+  }
+
+  function loop(){
+    if(!game.running) return;
+    update();
+    draw();
+    game.raf = requestAnimationFrame(loop);
+  }
+
+  function update(){
+    const p = game.player;
+    p.vy += 0.45;
+    p.y += p.vy;
+    if(p.y > groundY - p.h){ p.y = groundY - p.h; p.vy = 0; p.jumping = false; }
+    p.frame += 0.25;
+
+    game.speed = Math.min(game.speed + 0.0018, 7.5);
+    game.score += 0.12;
+    scoreEl.textContent = Math.floor(game.score);
+
+    game.spawnTimer++;
+    if(game.spawnTimer > 40 && Math.random() < 0.05){
+      spawn();
+      game.spawnTimer = 0;
+    }
+    game.obstacles.forEach(o => o.x -= game.speed);
+    game.obstacles = game.obstacles.filter(o => o.x + o.w > 0);
+
+    for(const o of game.obstacles){
+      const hit = p.x < o.x + o.w - 3 && p.x + p.w - 3 > o.x && p.y < o.y + o.h && p.y + p.h > o.y + 3;
+      if(hit){ gameOver(); break; }
+    }
+  }
+
+  function gameOver(){
+    game.running = false;
+    game.gameOver = true;
+    if(game.raf) cancelAnimationFrame(game.raf);
+    statusEl.textContent = 'проигрыш — тапни ещё раз';
+  }
+
+  function draw(){
+    const c = colors();
+    ctx.clearRect(0, 0, W, H);
+
+    ctx.strokeStyle = c.border;
+    ctx.setLineDash([4,4]);
+    ctx.beginPath();
+    ctx.moveTo(0, groundY);
+    ctx.lineTo(W, groundY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    const p = game.player;
+    const legPhase = Math.sin(p.frame*4);
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.fillStyle = c.text;
+    ctx.strokeStyle = c.text;
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.arc(p.w/2, 4, 4, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillRect(p.w/2 - 1.5, 8, 3, 12);
+    const armSwing = p.jumping ? 2 : legPhase*3;
+    ctx.beginPath();
+    ctx.moveTo(p.w/2, 11); ctx.lineTo(p.w/2 - 6, 15 + armSwing);
+    ctx.moveTo(p.w/2, 11); ctx.lineTo(p.w/2 + 6, 15 - armSwing);
+    ctx.stroke();
+    const legSwing = p.jumping ? 4 : legPhase*4;
+    ctx.beginPath();
+    ctx.moveTo(p.w/2, 20); ctx.lineTo(p.w/2 - 5, 28 + legSwing);
+    ctx.moveTo(p.w/2, 20); ctx.lineTo(p.w/2 + 5, 28 - legSwing);
+    ctx.stroke();
+    ctx.restore();
+
+    game.obstacles.forEach(o=>{
+      ctx.save();
+      ctx.translate(o.x, o.y);
+      ctx.strokeStyle = c.text;
+      ctx.fillStyle = c.text;
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      const segs = 5;
+      for(let i=0; i<=segs; i++){
+        const yy = (o.h/segs)*i;
+        const xx = Math.sin(i*1.3)*3 + o.w/2;
+        if(i===0) ctx.moveTo(xx, o.h-yy); else ctx.lineTo(xx, o.h-yy);
+      }
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.ellipse(o.w/2, 1.5, 4.5, 3, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    });
+  }
+
+  draw();
 }
 
 /* ---------- init ---------- */
