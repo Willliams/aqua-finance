@@ -1,18 +1,32 @@
 {
-  "name": "AquaFinance",
-  "short_name": "AquaFinance",
-  "description": "Учёт финансов в стиле воды",
+  "name": "Финансы — чек",
+  "short_name": "Финансы",
+  "description": "Учёт финансов в стиле кассового чека: быстрый ввод, счета, история, регулярные платежи",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#0a0a0a",
-  "theme_color": "#2196F3",
   "orientation": "portrait",
+  "background_color": "#f2f1ec",
+  "theme_color": "#1c1b19",
+  "lang": "ru",
   "icons": [
     {
-      "src": "icon-512.png",
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
