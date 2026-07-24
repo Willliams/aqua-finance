@@ -271,11 +271,12 @@ function addPeriod(dateStr, rule){
   else if(rule.frequency==='custom') d.setDate(d.getDate()+n);
   return d.toISOString().slice(0,10);
 }
-function createTxFromRule(rule, dateStr){
-  const tx = { id:uid(), accountId:rule.accountId, categoryId:rule.categoryId, type:rule.type,
+function createTxFromRule(rule, dateStr, accountIdOverride){
+  const accountId = accountIdOverride || rule.accountId;
+  const tx = { id:uid(), accountId, categoryId:rule.categoryId, type:rule.type,
     amount:rule.amount, date:dateStr, note:rule.note||'', recurringRuleId:rule.id };
   state.transactions.unshift(tx);
-  const acc = state.accounts.find(a=>a.id===rule.accountId);
+  const acc = state.accounts.find(a=>a.id===accountId);
   if(acc) acc.balance += (rule.type==='income'? rule.amount : -rule.amount);
 }
 function processRecurring(){
@@ -333,8 +334,10 @@ function renderReminders(){
     if(!rule) return '';
     const cat = state.categories.find(c=>c.id===rule.categoryId);
     const label = rule.note ? rule.note : (cat?cat.name:'Платёж');
+    const accOptions = state.accounts.map(a=>`<option value="${a.id}" ${a.id===rule.accountId?'selected':''}>${a.name}</option>`).join('');
     return `<div class="reminder">
       <div>Наступил срок: <b>${label}</b>, ${fmt(rule.amount)} ₽</div>
+      <div class="field" style="margin:8px 0 0;"><label>Списать со счёта</label><select id="acc_override_${rule.id}">${accOptions}</select></div>
       <div class="rbtns">
         <button data-action="confirmRule" data-id="${rule.id}">Провести</button>
         <button data-action="skipRule" data-id="${rule.id}">Отложить</button>
@@ -350,7 +353,11 @@ function renderAccounts(){
   document.getElementById('accountsList').innerHTML = state.accounts.map(a=>`
     <div class="row">
       <div class="left"><div><div class="name">${a.name}</div><div class="sub">${a.type==='cash'?'наличные':'карта'}</div></div></div>
-      <span class="val">${fmt(a.balance)} ₽</span>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span class="val">${fmt(a.balance)} ₽</span>
+        <span class="receipt-icon" data-action="editAccount" data-id="${a.id}">✎</span>
+        <span class="receipt-icon" data-action="deleteAccount" data-id="${a.id}" style="border-color:var(--danger); color:var(--danger);">✕</span>
+      </div>
     </div>`).join('');
 }
 
@@ -419,6 +426,7 @@ function renderHistory(){
         <div style="display:flex; align-items:center; gap:8px;">
           ${t.receiptUrl?`<span class="receipt-icon" data-action="viewReceipt" data-id="${t.id}">чек</span>`:''}
           <span class="val ${t.type}">${t.type==='income'?'+':'−'} ${fmt(t.amount)} ₽</span>
+          <span class="receipt-icon" data-action="editTx" data-id="${t.id}">✎</span>
           <span class="receipt-icon" data-action="deleteTx" data-id="${t.id}" style="border-color:var(--danger); color:var(--danger);">✕</span>
         </div>
       </div>`;
@@ -442,8 +450,11 @@ function renderRecurring(){
     const cat = state.categories.find(c=>c.id===r.categoryId);
     const label = r.note ? r.note : (cat?cat.name:'—');
     return `<div class="row">
-      <div class="left"><div><div class="name">${label}${r.note && cat?` <span class="sub">· ${cat.name}</span>`:''}</div><div class="sub">${freqLabel[r.frequency]||r.frequency} · след. ${r.nextDate}</div></div></div>
-      <span class="val ${r.type}">${r.type==='income'?'+':'−'} ${fmt(r.amount)} ₽</span>
+      <div class="left"><div><div class="name">${label}${r.note && cat?` <span class="sub">· ${cat.name}</span>`:''}${!r.active?' <span class="sub">(на паузе)</span>':''}</div><div class="sub">${freqLabel[r.frequency]||r.frequency} · след. ${r.nextDate}</div></div></div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span class="val ${r.type}">${r.type==='income'?'+':'−'} ${fmt(r.amount)} ₽</span>
+        <span class="receipt-icon" data-action="editRule" data-id="${r.id}">✎</span>
+      </div>
     </div>`;
   }).join('') || `<div style="padding:16px 0; text-align:center; color:var(--faint); font-size:11px;">Нет регулярных платежей</div>`;
 }
@@ -526,7 +537,10 @@ document.getElementById('remindersBox').addEventListener('click', e=>{
   const btn = e.target.closest('button[data-action]'); if(!btn) return;
   const rule = state.recurringRules.find(r=>r.id===btn.dataset.id);
   if(!rule) return;
-  if(btn.dataset.action==='confirmRule'){ createTxFromRule(rule, todayStr()); }
+  if(btn.dataset.action==='confirmRule'){
+    const sel = document.getElementById('acc_override_'+rule.id);
+    createTxFromRule(rule, todayStr(), sel ? sel.value : rule.accountId);
+  }
   rule.nextDate = addPeriod(rule.nextDate, rule);
   state.dueReminders = state.dueReminders.filter(id=>id!==rule.id);
   saveState(state); renderHome();
@@ -546,6 +560,39 @@ function openAddAccountForm(){
     <div class="sheet-actions">
       <button data-action="close">Отмена</button>
       <button class="primary" data-action="saveAccount">Добавить</button>
+    </div>`);
+}
+document.getElementById('accountsList').addEventListener('click', e=>{
+  const editEl = e.target.closest('[data-action="editAccount"]');
+  if(editEl){ openEditAccountForm(editEl.dataset.id); return; }
+  const delEl = e.target.closest('[data-action="deleteAccount"]');
+  if(delEl){
+    const acc = state.accounts.find(a=>a.id===delEl.dataset.id); if(!acc) return;
+    if(state.accounts.length<=1){ alert('Нельзя удалить последний счёт.'); return; }
+    if(state.recurringRules.some(r=>r.accountId===acc.id && r.active)){
+      alert('Нельзя удалить счёт: на него ссылается активный регулярный платёж. Сначала измените или отключите его.');
+      return;
+    }
+    if(!confirm(`Удалить счёт «${acc.name}»? Операции в истории останутся, но счёт исчезнет из списка.`)) return;
+    state.accounts = state.accounts.filter(a=>a.id!==acc.id);
+    if(state.settings.activeAccountId===acc.id) state.settings.activeAccountId = state.accounts[0].id;
+    saveState(state); renderAccounts(); renderHome();
+    return;
+  }
+});
+function openEditAccountForm(accId){
+  const acc = state.accounts.find(a=>a.id===accId); if(!acc) return;
+  openSheet(`
+    <button class="close-x" data-action="close">✕</button>
+    <h2>Изменить счёт</h2>
+    <div class="field"><label>Название</label><input id="f_name" value="${acc.name}"></div>
+    <div class="field"><label>Тип</label>
+      <select id="f_type"><option value="card" ${acc.type==='card'?'selected':''}>Карта</option><option value="cash" ${acc.type==='cash'?'selected':''}>Наличные</option></select>
+    </div>
+    <div class="field"><label>Текущий баланс (можно скорректировать)</label><input id="f_balance" type="number" value="${acc.balance}"></div>
+    <div class="sheet-actions">
+      <button data-action="close">Отмена</button>
+      <button class="primary" data-action="saveEditAccount" data-id="${acc.id}">Сохранить</button>
     </div>`);
 }
 
@@ -583,6 +630,12 @@ document.getElementById('historyList').addEventListener('click', e=>{
     openSheet(`<button class="close-x" data-action="close">✕</button><h2>Чек</h2><img class="receipt-preview" src="${tx.receiptUrl}">`);
     return;
   }
+  const editEl = e.target.closest('[data-action="editTx"]');
+  if(editEl){
+    const tx = state.transactions.find(t=>t.id===editEl.dataset.id); if(!tx) return;
+    openEditTxForm(tx);
+    return;
+  }
   const delEl = e.target.closest('[data-action="deleteTx"]');
   if(delEl){
     const tx = state.transactions.find(t=>t.id===delEl.dataset.id); if(!tx) return;
@@ -594,6 +647,26 @@ document.getElementById('historyList').addEventListener('click', e=>{
     return;
   }
 });
+function openEditTxForm(tx){
+  const catsOptions = state.categories.map(c=>`<option value="${c.id}" ${c.id===tx.categoryId?'selected':''}>${c.name} (${c.type==='income'?'доход':'расход'})</option>`).join('');
+  const accOptions = state.accounts.map(a=>`<option value="${a.id}" ${a.id===tx.accountId?'selected':''}>${a.name}</option>`).join('');
+  openSheet(`
+    <button class="close-x" data-action="close">✕</button>
+    <h2>Исправить операцию</h2>
+    <div class="field"><label>Тип</label>
+      <select id="e_type"><option value="expense" ${tx.type==='expense'?'selected':''}>Расход</option><option value="income" ${tx.type==='income'?'selected':''}>Доход</option></select>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Сумма</label><input id="e_amount" type="number" value="${tx.amount}"></div>
+      <div class="field"><label>Дата</label><input id="e_date" type="date" value="${tx.date}"></div>
+    </div>
+    <div class="field"><label>Категория</label><select id="e_cat">${catsOptions}</select></div>
+    <div class="field"><label>Счёт</label><select id="e_acc">${accOptions}</select></div>
+    <div class="sheet-actions">
+      <button data-action="close">Отмена</button>
+      <button class="primary" data-action="saveEditTx" data-id="${tx.id}">Сохранить</button>
+    </div>`);
+}
 
 /* ---------- recurring interactions ---------- */
 document.getElementById('addRuleBtn').addEventListener('click', ()=> openAddRule());
@@ -631,7 +704,40 @@ function openAddRule(){
       <button class="primary" data-action="saveRule">Сохранить</button>
     </div>`);
 }
-document.getElementById('recurringList').addEventListener('click', ()=>{});
+document.getElementById('recurringList').addEventListener('click', e=>{
+  const editEl = e.target.closest('[data-action="editRule"]'); if(!editEl) return;
+  openEditRule(editEl.dataset.id);
+});
+function openEditRule(ruleId){
+  const rule = state.recurringRules.find(r=>r.id===ruleId); if(!rule) return;
+  const catsOptions = state.categories.map(c=>`<option value="${c.id}" ${c.id===rule.categoryId?'selected':''}>${c.name} (${c.type==='income'?'доход':'расход'})</option>`).join('');
+  const accOptions = state.accounts.map(a=>`<option value="${a.id}" ${a.id===rule.accountId?'selected':''}>${a.name}</option>`).join('');
+  const freqOptionsList = [['daily','Ежедневно'],['weekly','Еженедельно'],['monthly','Ежемесячно'],['yearly','Ежегодно'],['custom','Каждые N дней']];
+  const freqOptions = freqOptionsList.map(([v,l])=>`<option value="${v}" ${rule.frequency===v?'selected':''}>${l}</option>`).join('');
+  openSheet(`
+    <button class="close-x" data-action="close">✕</button>
+    <h2>Изменить регулярный платёж</h2>
+    <div class="field"><label>Название (свой ярлык)</label><input id="er_note" value="${rule.note||''}" placeholder="например, Netflix, Аренда"></div>
+    <div class="field"><label>Тип</label>
+      <select id="er_type"><option value="expense" ${rule.type==='expense'?'selected':''}>Расход</option><option value="income" ${rule.type==='income'?'selected':''}>Доход</option></select>
+    </div>
+    <div class="field"><label>Категория</label><select id="er_cat">${catsOptions}</select></div>
+    <div class="field"><label>Счёт</label><select id="er_acc">${accOptions}</select></div>
+    <div class="field-row">
+      <div class="field"><label>Сумма</label><input id="er_amount" type="number" value="${rule.amount}"></div>
+      <div class="field"><label>Периодичность</label><select id="er_freq">${freqOptions}</select></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Интервал</label><input id="er_interval" type="number" value="${rule.interval||1}" min="1"></div>
+      <div class="field"><label>Дата следующего платежа</label><input id="er_next" type="date" value="${rule.nextDate}"></div>
+    </div>
+    <div class="switch-row"><span>Списывать автоматически (иначе — напоминание)</span><input type="checkbox" id="er_auto" ${rule.autoApply?'checked':''}></div>
+    <div class="switch-row"><span>Активен (снимите — поставить на паузу)</span><input type="checkbox" id="er_active" ${rule.active?'checked':''}></div>
+    <div class="sheet-actions">
+      <button data-action="deleteRule" data-id="${rule.id}" style="color:var(--danger);">Удалить</button>
+      <button class="primary" data-action="saveEditRule" data-id="${rule.id}">Сохранить</button>
+    </div>`);
+}
 
 /* ---------- add category ---------- */
 function openAddCategory(){
@@ -708,6 +814,53 @@ document.getElementById('sheetContent').addEventListener('click', e=>{
     state.accounts.push(newAcc);
     state.settings.activeAccountId = newAcc.id;
     saveState(state); closeSheet(); renderAccounts(); renderHome();
+  }
+
+  if(action==='saveEditAccount'){
+    const acc = state.accounts.find(a=>a.id===btn.dataset.id); if(!acc) return;
+    acc.name = document.getElementById('f_name').value.trim() || acc.name;
+    acc.type = document.getElementById('f_type').value;
+    acc.balance = parseFloat(document.getElementById('f_balance').value) || 0;
+    saveState(state); closeSheet(); renderAccounts(); renderHome();
+  }
+
+  if(action==='saveEditTx'){
+    const tx = state.transactions.find(t=>t.id===btn.dataset.id); if(!tx) return;
+    const oldAcc = state.accounts.find(a=>a.id===tx.accountId);
+    if(oldAcc) oldAcc.balance -= (tx.type==='income'? tx.amount : -tx.amount);
+
+    tx.type = document.getElementById('e_type').value;
+    tx.amount = parseFloat(document.getElementById('e_amount').value) || 0;
+    tx.categoryId = document.getElementById('e_cat').value;
+    tx.accountId = document.getElementById('e_acc').value;
+    tx.date = document.getElementById('e_date').value || tx.date;
+
+    const newAcc = state.accounts.find(a=>a.id===tx.accountId);
+    if(newAcc) newAcc.balance += (tx.type==='income'? tx.amount : -tx.amount);
+
+    saveState(state); closeSheet(); renderHistory(); renderAccounts(); renderHome();
+  }
+
+  if(action==='saveEditRule'){
+    const rule = state.recurringRules.find(r=>r.id===btn.dataset.id); if(!rule) return;
+    rule.note = document.getElementById('er_note').value.trim();
+    rule.type = document.getElementById('er_type').value;
+    rule.categoryId = document.getElementById('er_cat').value;
+    rule.accountId = document.getElementById('er_acc').value;
+    rule.amount = parseFloat(document.getElementById('er_amount').value) || 0;
+    rule.frequency = document.getElementById('er_freq').value;
+    rule.interval = parseInt(document.getElementById('er_interval').value) || 1;
+    rule.nextDate = document.getElementById('er_next').value || rule.nextDate;
+    rule.autoApply = document.getElementById('er_auto').checked;
+    rule.active = document.getElementById('er_active').checked;
+    saveState(state); closeSheet(); renderRecurring();
+  }
+
+  if(action==='deleteRule'){
+    if(!confirm('Удалить этот регулярный платёж?')) return;
+    state.recurringRules = state.recurringRules.filter(r=>r.id!==btn.dataset.id);
+    state.dueReminders = state.dueReminders.filter(id=>id!==btn.dataset.id);
+    saveState(state); closeSheet(); renderRecurring(); renderHome();
   }
 
   if(action==='saveCategory'){
