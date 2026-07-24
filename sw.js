@@ -1,4 +1,4 @@
-const CACHE_NAME = 'finance-cek-v1';
+const CACHE_NAME = 'finance-cek-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -26,6 +26,23 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+
+  // HTML/navigation: network-first, so updates show up immediately.
+  // Falls back to cache only when offline.
+  if (event.request.mode === 'navigate' || event.request.destination === 'document') {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          return response;
+        })
+        .catch(() => caches.match(event.request).then((c) => c || caches.match('./index.html')))
+    );
+    return;
+  }
+
+  // Static assets (icons, manifest, etc): cache-first for speed.
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) return cached;
