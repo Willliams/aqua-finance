@@ -249,9 +249,44 @@ function uid(){ return Math.random().toString(36).slice(2,9); }
 function todayStr(){ return new Date().toISOString().slice(0,10); }
 function fmt(n){ return Math.round(n).toLocaleString('ru-RU'); }
 
+const CURRENCIES = [
+  {code:'RUB', symbol:'₽', label:'Рубль ₽'},
+  {code:'USD', symbol:'$', label:'Доллар $'},
+  {code:'EUR', symbol:'€', label:'Евро €'},
+  {code:'GBP', symbol:'£', label:'Фунт £'},
+  {code:'KZT', symbol:'₸', label:'Тенге ₸'},
+  {code:'UAH', symbol:'₴', label:'Гривна ₴'},
+  {code:'BYN', symbol:'Br', label:'Бел. рубль Br'},
+  {code:'CNY', symbol:'¥', label:'Юань ¥'}
+];
+function currencySymbol(code){
+  const c = CURRENCIES.find(c=>c.code===code);
+  return c ? c.symbol : (code || '₽');
+}
+function accCurrency(accountId){
+  const a = state.accounts.find(a=>a.id===accountId);
+  return a ? (a.currency||'RUB') : 'RUB';
+}
+function fmtMoney(n, currencyCode){
+  return fmt(n) + ' ' + currencySymbol(currencyCode);
+}
+function sumByCurrency(items, amountFn, currencyFn){
+  const map = {};
+  items.forEach(it=>{
+    const cur = currencyFn(it) || 'RUB';
+    map[cur] = (map[cur]||0) + amountFn(it);
+  });
+  return map;
+}
+function fmtCurrencyMap(map, signed){
+  const entries = Object.entries(map);
+  if(!entries.length) return '0 ' + currencySymbol('RUB');
+  return entries.map(([cur,sum])=> (signed && sum>=0?'+':'') + fmt(sum) + ' ' + currencySymbol(cur)).join(' · ');
+}
+
 function defaultState(){
   return {
-    accounts: [ {id:'a_cash', name:'Наличные', type:'cash', balance:0} ],
+    accounts: [ {id:'a_cash', name:'Наличные', type:'cash', balance:0, currency:'RUB'} ],
     categories: [
       {id:'c1',name:'Продукты',type:'expense'},{id:'c2',name:'Транспорт',type:'expense'},
       {id:'c3',name:'Кафе',type:'expense'},{id:'c4',name:'Дом',type:'expense'},
@@ -319,12 +354,13 @@ function renderHome(){
   const acc = state.accounts.find(a=>a.id===state.settings.activeAccountId) || state.accounts[0];
   document.getElementById('accountChip').textContent = (acc? acc.name : '—') + ' ▾';
   document.getElementById('todayLabel').textContent = new Date().toLocaleDateString('ru-RU',{day:'2-digit',month:'long'});
-  document.getElementById('accBalance').textContent = fmt(acc? acc.balance : 0) + ' ₽';
-  document.getElementById('totalBalance').textContent = fmt(state.accounts.reduce((s,a)=>s+a.balance,0)) + ' ₽';
+  document.getElementById('accBalance').textContent = fmtMoney(acc? acc.balance : 0, acc? acc.currency : 'RUB');
+  const totalMap = sumByCurrency(state.accounts, a=>a.balance, a=>a.currency);
+  document.getElementById('totalBalance').textContent = fmtCurrencyMap(totalMap);
 
   const amt = document.getElementById('amountDisplay');
   const value = parseFloat(ui.amountStr.replace(',','.')) || 0;
-  amt.textContent = (ui.mode==='expense'?'− ':'+ ') + fmt(value) + ' ₽';
+  amt.textContent = (ui.mode==='expense'?'− ':'+ ') + fmtMoney(value, acc? acc.currency : 'RUB');
   amt.className = 'amount ' + ui.mode;
 
   const cats = state.categories.filter(c=>c.type===ui.mode);
@@ -349,9 +385,9 @@ function renderReminders(){
     if(!rule) return '';
     const cat = state.categories.find(c=>c.id===rule.categoryId);
     const label = rule.note ? rule.note : (cat?cat.name:'Платёж');
-    const accOptions = state.accounts.map(a=>`<option value="${a.id}" ${a.id===rule.accountId?'selected':''}>${a.name}</option>`).join('');
+    const accOptions = state.accounts.map(a=>`<option value="${a.id}" ${a.id===rule.accountId?'selected':''}>${a.name} (${currencySymbol(a.currency)})</option>`).join('');
     return `<div class="reminder">
-      <div>Наступил срок: <b>${label}</b>, ${fmt(rule.amount)} ₽</div>
+      <div>Наступил срок: <b>${label}</b>, ${fmtMoney(rule.amount, accCurrency(rule.accountId))}</div>
       <div class="field" style="margin:8px 0 0;"><label>Списать со счёта</label><select id="acc_override_${rule.id}">${accOptions}</select></div>
       <div class="rbtns">
         <button data-action="confirmRule" data-id="${rule.id}">Провести</button>
@@ -363,18 +399,18 @@ function renderReminders(){
 
 /* ---------- render: accounts ---------- */
 function renderAccounts(){
-  const total = state.accounts.reduce((s,a)=>s+a.balance,0);
-  document.getElementById('accountsTotal').textContent = 'итого ' + fmt(total) + ' ₽';
+  const totalMap = sumByCurrency(state.accounts, a=>a.balance, a=>a.currency);
+  document.getElementById('accountsTotal').textContent = 'итого ' + fmtCurrencyMap(totalMap);
   const rows = state.accounts.map(a=>`
     <div class="row">
-      <div class="left"><div><div class="name">${a.name}</div><div class="sub">${a.type==='cash'?'наличные':'карта'}</div></div></div>
+      <div class="left"><div><div class="name">${a.name}</div><div class="sub">${a.type==='cash'?'наличные':'карта'} · ${a.currency||'RUB'}</div></div></div>
       <div style="display:flex; align-items:center; gap:8px;">
-        <span class="val">${fmt(a.balance)} ₽</span>
+        <span class="val">${fmtMoney(a.balance, a.currency)}</span>
         <span class="receipt-icon" data-action="editAccount" data-id="${a.id}">✎</span>
         <span class="receipt-icon" data-action="deleteAccount" data-id="${a.id}" style="border-color:var(--danger); color:var(--danger);">✕</span>
       </div>
     </div>`).join('');
-  const totalRow = state.accounts.length ? `<div class="total-row"><span>ИТОГО</span><span>${fmt(total)} ₽</span></div>` : '';
+  const totalRow = state.accounts.length ? `<div class="total-row"><span>ИТОГО</span><span>${fmtCurrencyMap(totalMap)}</span></div>` : '';
   document.getElementById('accountsList').innerHTML = rows + totalRow;
 }
 
@@ -397,25 +433,32 @@ function renderHistory(){
   let periodTxs = [...state.transactions];
   if(range.from) periodTxs = periodTxs.filter(t=> t.date >= range.from && t.date <= range.to);
 
-  const income = periodTxs.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
-  const expense = periodTxs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
-  document.getElementById('periodIncome').textContent = fmt(income) + ' ₽';
-  document.getElementById('periodExpense').textContent = fmt(expense) + ' ₽';
+  const incomeMap = sumByCurrency(periodTxs.filter(t=>t.type==='income'), t=>t.amount, t=>accCurrency(t.accountId));
+  const expenseMap = sumByCurrency(periodTxs.filter(t=>t.type==='expense'), t=>t.amount, t=>accCurrency(t.accountId));
+  const netMap = {};
+  Object.entries(incomeMap).forEach(([cur,sum])=> netMap[cur] = (netMap[cur]||0) + sum);
+  Object.entries(expenseMap).forEach(([cur,sum])=> netMap[cur] = (netMap[cur]||0) - sum);
+  document.getElementById('periodIncome').textContent = fmtCurrencyMap(incomeMap);
+  document.getElementById('periodExpense').textContent = fmtCurrencyMap(expenseMap);
   const netEl = document.getElementById('periodNet');
-  netEl.textContent = (income-expense>=0?'+':'') + fmt(income-expense) + ' ₽';
-  netEl.style.color = (income-expense>=0) ? 'var(--success)' : 'var(--danger)';
+  const netTotal = Object.values(netMap).reduce((s,v)=>s+v,0);
+  netEl.textContent = fmtCurrencyMap(netMap, true);
+  netEl.style.color = (netTotal>=0) ? 'var(--success)' : 'var(--danger)';
 
   const byCat = {};
   periodTxs.filter(t=>t.type==='expense').forEach(t=>{
-    byCat[t.categoryId] = (byCat[t.categoryId]||0) + t.amount;
+    const cur = accCurrency(t.accountId);
+    const key = t.categoryId + '|' + cur;
+    if(!byCat[key]) byCat[key] = { sum:0, categoryId:t.categoryId, currency:cur };
+    byCat[key].sum += t.amount;
   });
-  const sortedCats = Object.entries(byCat).sort((a,b)=>b[1]-a[1]).slice(0,6);
-  const maxCat = sortedCats.length ? sortedCats[0][1] : 1;
-  document.getElementById('categoryBreakdown').innerHTML = sortedCats.length ? sortedCats.map(([cid,sum])=>{
-    const cat = state.categories.find(c=>c.id===cid);
-    const pct = Math.round((sum/maxCat)*100);
+  const sortedCats = Object.values(byCat).sort((a,b)=>b.sum-a.sum).slice(0,6);
+  const maxCat = sortedCats.length ? sortedCats[0].sum : 1;
+  document.getElementById('categoryBreakdown').innerHTML = sortedCats.length ? sortedCats.map(entry=>{
+    const cat = state.categories.find(c=>c.id===entry.categoryId);
+    const pct = Math.round((entry.sum/maxCat)*100);
     return `<div class="cat-bar-row">
-      <div class="cat-bar-top"><span>${cat?cat.name:'—'}</span><span>${fmt(sum)} ₽</span></div>
+      <div class="cat-bar-top"><span>${cat?cat.name:'—'}</span><span>${fmtMoney(entry.sum, entry.currency)}</span></div>
       <div class="cat-bar-track"><div class="cat-bar-fill" style="width:${pct}%;"></div></div>
     </div>`;
   }).join('') : `<div style="font-size:11px; color:var(--faint); padding:6px 0;">Нет расходов за период</div>`;
@@ -430,19 +473,20 @@ function renderHistory(){
   txs.forEach(t=>{ (groups[t.date] = groups[t.date]||[]).push(t); });
 
   let html = '';
-  let total = 0;
+  const totalMap = {};
   Object.keys(groups).forEach(date=>{
     html += `<div class="date-label">${new Date(date+'T00:00:00').toLocaleDateString('ru-RU',{day:'2-digit',month:'long'})}</div>`;
     groups[date].forEach(t=>{
       const cat = state.categories.find(c=>c.id===t.categoryId);
       const rule = t.recurringRuleId ? state.recurringRules.find(r=>r.id===t.recurringRuleId) : null;
       const rowLabel = (rule && rule.note) ? rule.note : (cat?cat.name:'—');
-      total += (t.type==='income'? t.amount : -t.amount);
+      const cur = accCurrency(t.accountId);
+      totalMap[cur] = (totalMap[cur]||0) + (t.type==='income'? t.amount : -t.amount);
       html += `<div class="row">
         <div class="left"><span class="name">${rowLabel}${t.recurringRuleId?' <span class="sub">(регулярный)</span>':''}</span></div>
         <div style="display:flex; align-items:center; gap:8px;">
           ${t.receiptUrl?`<span class="receipt-icon" data-action="viewReceipt" data-id="${t.id}">чек</span>`:''}
-          <span class="val ${t.type}">${t.type==='income'?'+':'−'} ${fmt(t.amount)} ₽</span>
+          <span class="val ${t.type}">${t.type==='income'?'+':'−'} ${fmtMoney(t.amount, cur)}</span>
           <span class="receipt-icon" data-action="editTx" data-id="${t.id}">✎</span>
           <span class="receipt-icon" data-action="deleteTx" data-id="${t.id}" style="border-color:var(--danger); color:var(--danger);">✕</span>
         </div>
@@ -450,17 +494,16 @@ function renderHistory(){
     });
   });
   if(!txs.length) html = `<div style="padding:20px 0; text-align:center; color:var(--faint); font-size:11px;">Пока нет операций</div>`;
-  else html += `<div class="total-row"><span>ИТОГО ЗА ПЕРИОД</span><span>${total>=0?'+':''}${fmt(total)} ₽</span></div>`;
+  else html += `<div class="total-row"><span>ИТОГО ЗА ПЕРИОД</span><span>${fmtCurrencyMap(totalMap, true)}</span></div>`;
   document.getElementById('historyList').innerHTML = html;
 }
 
 /* ---------- render: recurring ---------- */
 function renderRecurring(){
   const monthNow = todayStr().slice(0,7);
-  let planned = 0;
-  state.recurringRules.filter(r=>r.active && r.type==='expense' && r.nextDate.slice(0,7)===monthNow)
-    .forEach(r=> planned += r.amount);
-  document.getElementById('plannedTotal').textContent = fmt(planned) + ' ₽';
+  const plannedRules = state.recurringRules.filter(r=>r.active && r.type==='expense' && r.nextDate.slice(0,7)===monthNow);
+  const plannedMap = sumByCurrency(plannedRules, r=>r.amount, r=>accCurrency(r.accountId));
+  document.getElementById('plannedTotal').textContent = fmtCurrencyMap(plannedMap);
 
   const freqLabel = {daily:'ежедневно', weekly:'еженедельно', monthly:'ежемесячно', yearly:'ежегодно', custom:'произвольно'};
   document.getElementById('recurringList').innerHTML = state.recurringRules.map(r=>{
@@ -469,7 +512,7 @@ function renderRecurring(){
     return `<div class="row">
       <div class="left"><div><div class="name">${label}${r.note && cat?` <span class="sub">· ${cat.name}</span>`:''}${!r.active?' <span class="sub">(на паузе)</span>':''}</div><div class="sub">${freqLabel[r.frequency]||r.frequency} · след. ${r.nextDate}</div></div></div>
       <div style="display:flex; align-items:center; gap:8px;">
-        <span class="val ${r.type}">${r.type==='income'?'+':'−'} ${fmt(r.amount)} ₽</span>
+        <span class="val ${r.type}">${r.type==='income'?'+':'−'} ${fmtMoney(r.amount, accCurrency(r.accountId))}</span>
         <span class="receipt-icon" data-action="editRule" data-id="${r.id}">✎</span>
       </div>
     </div>`;
@@ -539,8 +582,8 @@ document.getElementById('accountChip').addEventListener('click', openAccountPick
 function openAccountPicker(){
   const rows = state.accounts.map(a=>`
     <div class="row" data-action="selectAccount" data-id="${a.id}" style="cursor:pointer;">
-      <div class="left"><div><div class="name">${a.name}</div><div class="sub">${a.type==='cash'?'наличные':'карта'}</div></div></div>
-      <span class="val">${fmt(a.balance)} ₽</span>
+      <div class="left"><div><div class="name">${a.name}</div><div class="sub">${a.type==='cash'?'наличные':'карта'} · ${a.currency||'RUB'}</div></div></div>
+      <span class="val">${fmtMoney(a.balance, a.currency)}</span>
     </div>`).join('');
   openSheet(`
     <button class="close-x" data-action="close">✕</button>
@@ -570,8 +613,13 @@ function openAddAccountForm(){
     <button class="close-x" data-action="close">✕</button>
     <h2>Добавить счёт</h2>
     <div class="field"><label>Название</label><input id="f_name" placeholder="например, Тинькофф Блэк"></div>
-    <div class="field"><label>Тип</label>
-      <select id="f_type"><option value="card">Карта</option><option value="cash">Наличные</option></select>
+    <div class="field-row">
+      <div class="field"><label>Тип</label>
+        <select id="f_type"><option value="card">Карта</option><option value="cash">Наличные</option></select>
+      </div>
+      <div class="field"><label>Валюта</label>
+        <select id="f_currency">${CURRENCIES.map(c=>`<option value="${c.code}">${c.label}</option>`).join('')}</select>
+      </div>
     </div>
     <div class="field"><label>Начальный баланс</label><input id="f_balance" type="number" value="0"></div>
     <div class="sheet-actions">
@@ -603,8 +651,13 @@ function openEditAccountForm(accId){
     <button class="close-x" data-action="close">✕</button>
     <h2>Изменить счёт</h2>
     <div class="field"><label>Название</label><input id="f_name" value="${acc.name}"></div>
-    <div class="field"><label>Тип</label>
-      <select id="f_type"><option value="card" ${acc.type==='card'?'selected':''}>Карта</option><option value="cash" ${acc.type==='cash'?'selected':''}>Наличные</option></select>
+    <div class="field-row">
+      <div class="field"><label>Тип</label>
+        <select id="f_type"><option value="card" ${acc.type==='card'?'selected':''}>Карта</option><option value="cash" ${acc.type==='cash'?'selected':''}>Наличные</option></select>
+      </div>
+      <div class="field"><label>Валюта</label>
+        <select id="f_currency">${CURRENCIES.map(c=>`<option value="${c.code}" ${(acc.currency||'RUB')===c.code?'selected':''}>${c.label}</option>`).join('')}</select>
+      </div>
     </div>
     <div class="field"><label>Текущий баланс (можно скорректировать)</label><input id="f_balance" type="number" value="${acc.balance}"></div>
     <div class="sheet-actions">
@@ -666,7 +719,7 @@ document.getElementById('historyList').addEventListener('click', e=>{
 });
 function openEditTxForm(tx){
   const catsOptions = state.categories.map(c=>`<option value="${c.id}" ${c.id===tx.categoryId?'selected':''}>${c.name} (${c.type==='income'?'доход':'расход'})</option>`).join('');
-  const accOptions = state.accounts.map(a=>`<option value="${a.id}" ${a.id===tx.accountId?'selected':''}>${a.name}</option>`).join('');
+  const accOptions = state.accounts.map(a=>`<option value="${a.id}" ${a.id===tx.accountId?'selected':''}>${a.name} (${currencySymbol(a.currency)})</option>`).join('');
   openSheet(`
     <button class="close-x" data-action="close">✕</button>
     <h2>Исправить операцию</h2>
@@ -689,7 +742,7 @@ function openEditTxForm(tx){
 document.getElementById('addRuleBtn').addEventListener('click', ()=> openAddRule());
 function openAddRule(){
   const catsOptions = () => state.categories.map(c=>`<option value="${c.id}" data-type="${c.type}">${c.name} (${c.type==='income'?'доход':'расход'})</option>`).join('');
-  const accOptions = state.accounts.map(a=>`<option value="${a.id}">${a.name}</option>`).join('');
+  const accOptions = state.accounts.map(a=>`<option value="${a.id}">${a.name} (${currencySymbol(a.currency)})</option>`).join('');
   openSheet(`
     <button class="close-x" data-action="close">✕</button>
     <h2>Регулярный платёж</h2>
@@ -728,7 +781,7 @@ document.getElementById('recurringList').addEventListener('click', e=>{
 function openEditRule(ruleId){
   const rule = state.recurringRules.find(r=>r.id===ruleId); if(!rule) return;
   const catsOptions = state.categories.map(c=>`<option value="${c.id}" ${c.id===rule.categoryId?'selected':''}>${c.name} (${c.type==='income'?'доход':'расход'})</option>`).join('');
-  const accOptions = state.accounts.map(a=>`<option value="${a.id}" ${a.id===rule.accountId?'selected':''}>${a.name}</option>`).join('');
+  const accOptions = state.accounts.map(a=>`<option value="${a.id}" ${a.id===rule.accountId?'selected':''}>${a.name} (${currencySymbol(a.currency)})</option>`).join('');
   const freqOptionsList = [['daily','Ежедневно'],['weekly','Еженедельно'],['monthly','Ежемесячно'],['yearly','Ежегодно'],['custom','Каждые N дней']];
   const freqOptions = freqOptionsList.map(([v,l])=>`<option value="${v}" ${rule.frequency===v?'selected':''}>${l}</option>`).join('');
   openSheet(`
@@ -826,8 +879,9 @@ document.getElementById('sheetContent').addEventListener('click', e=>{
   if(action==='saveAccount'){
     const name = document.getElementById('f_name').value.trim() || 'Новый счёт';
     const type = document.getElementById('f_type').value;
+    const currency = document.getElementById('f_currency').value;
     const balance = parseFloat(document.getElementById('f_balance').value) || 0;
-    const newAcc = {id:uid(), name, type, balance};
+    const newAcc = {id:uid(), name, type, balance, currency};
     state.accounts.push(newAcc);
     state.settings.activeAccountId = newAcc.id;
     saveState(state); closeSheet(); renderAccounts(); renderHome();
@@ -837,6 +891,7 @@ document.getElementById('sheetContent').addEventListener('click', e=>{
     const acc = state.accounts.find(a=>a.id===btn.dataset.id); if(!acc) return;
     acc.name = document.getElementById('f_name').value.trim() || acc.name;
     acc.type = document.getElementById('f_type').value;
+    acc.currency = document.getElementById('f_currency').value;
     acc.balance = parseFloat(document.getElementById('f_balance').value) || 0;
     saveState(state); closeSheet(); renderAccounts(); renderHome();
   }
