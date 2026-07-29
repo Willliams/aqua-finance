@@ -248,7 +248,9 @@
 /* ---------- state ---------- */
 const KEY = 'financeAppState_v1';
 function uid(){ return Math.random().toString(36).slice(2,9); }
-function todayStr(){ return new Date().toISOString().slice(0,10); }
+function pad2(n){ return String(n).padStart(2,'0'); }
+function localDateStr(d){ return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
+function todayStr(){ return localDateStr(new Date()); }
 function fmt(n){ return Math.round(n).toLocaleString('ru-RU'); }
 function fmtDateRu(dateStr){
   if(!dateStr) return '';
@@ -328,7 +330,18 @@ function addPeriod(dateStr, rule){
   else if(rule.frequency==='monthly') d.setMonth(d.getMonth()+n);
   else if(rule.frequency==='yearly') d.setFullYear(d.getFullYear()+n);
   else if(rule.frequency==='custom') d.setDate(d.getDate()+n);
-  return d.toISOString().slice(0,10);
+  return localDateStr(d);
+}
+function ruleOccurrencesAmountInMonth(rule, monthStr){
+  let d = rule.startDate || rule.nextDate;
+  if(!d) return 0;
+  let count = 0, guard = 0;
+  while(d.slice(0,7) <= monthStr && guard < 3000){
+    guard++;
+    if(d.slice(0,7) === monthStr) count++;
+    d = addPeriod(d, rule);
+  }
+  return count * rule.amount;
 }
 function createTxFromRule(rule, dateStr, accountIdOverride){
   const accountId = accountIdOverride || rule.accountId;
@@ -426,8 +439,7 @@ function renderAccounts(){
 /* ---------- render: history ---------- */
 let historyFilter = 'all';
 let historyPeriod = { type: 'month' };
-function pad2(n){ return String(n).padStart(2,'0'); }
-function dstr(d){ return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
+function dstr(d){ return localDateStr(d); }
 function computeRange(period){
   const today = new Date();
   if(period.type==='today'){ return {from: dstr(today), to: dstr(today)}; }
@@ -517,8 +529,14 @@ function renderHistory(){
 /* ---------- render: recurring ---------- */
 function renderRecurring(){
   const monthNow = todayStr().slice(0,7);
-  const plannedRules = state.recurringRules.filter(r=>r.active && r.type==='expense' && r.nextDate.slice(0,7)===monthNow);
-  const plannedMap = sumByCurrency(plannedRules, r=>r.amount, r=>accCurrency(r.accountId));
+  const plannedMap = {};
+  state.recurringRules.filter(r=>r.active && r.type==='expense').forEach(r=>{
+    const sum = ruleOccurrencesAmountInMonth(r, monthNow);
+    if(sum>0){
+      const cur = accCurrency(r.accountId);
+      plannedMap[cur] = (plannedMap[cur]||0) + sum;
+    }
+  });
   document.getElementById('plannedTotal').textContent = fmtCurrencyMap(plannedMap);
 
   const freqLabel = {daily:'ежедневно', weekly:'еженедельно', monthly:'ежемесячно', yearly:'ежегодно', custom:'произвольно'};
