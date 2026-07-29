@@ -230,6 +230,38 @@
 <!-- Sheets / modals -->
 <div class="overlay" id="overlay"><div class="sheet" id="sheetContent"></div></div>
 
+<!-- Custom alert/confirm (replaces native alert()/confirm()) -->
+<div class="overlay" id="alertOverlay" style="z-index:70;">
+  <div class="sheet" id="alertSheet" style="max-width:340px; margin:0 auto 24px; padding-bottom:16px;">
+    <div id="alertMessage" style="font-size:13px; line-height:1.5; margin-bottom:16px;"></div>
+    <div class="sheet-actions"><button class="primary" id="alertOkBtn">Ок</button></div>
+  </div>
+</div>
+<div class="overlay" id="confirmOverlay" style="z-index:70;">
+  <div class="sheet" id="confirmSheet" style="max-width:340px; margin:0 auto 24px; padding-bottom:16px;">
+    <div id="confirmMessage" style="font-size:13px; line-height:1.5; margin-bottom:16px;"></div>
+    <div class="sheet-actions">
+      <button id="confirmNoBtn">Отмена</button>
+      <button class="primary" id="confirmYesBtn">Подтвердить</button>
+    </div>
+  </div>
+</div>
+
+<!-- PIN lock -->
+<div class="overlay" id="pinOverlay" style="z-index:80; background:var(--bg); align-items:center;">
+  <div class="sheet" id="pinSheet" style="max-width:280px; margin:0 auto; text-align:center; background:none; box-shadow:none;">
+    <div id="pinTitle" style="font-size:12px; color:var(--muted); margin-bottom:14px;">Введите PIN-код</div>
+    <div id="pinDots" style="display:flex; justify-content:center; gap:12px; margin-bottom:18px;"></div>
+    <div id="pinError" style="font-size:11px; color:var(--danger); min-height:14px; margin-bottom:10px;"></div>
+    <div class="keypad" id="pinKeypad" style="border-radius:var(--radius); overflow:hidden; border:1px solid var(--border);">
+      <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
+      <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button>
+      <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button>
+      <button data-k="cancel" id="pinCancelBtn" style="visibility:hidden; font-size:11px;">Отмена</button><button data-k="0">0</button><button data-k="back">⌫</button>
+    </div>
+  </div>
+</div>
+
 <!-- Easter egg game -->
 <div class="overlay" id="gameOverlay">
   <div class="sheet" id="gameSheet">
@@ -309,7 +341,7 @@ function defaultState(){
     transactions: [],
     recurringRules: [],
     dueReminders: [],
-    settings: { activeAccountId:'a_cash', theme:'light', style:'receipt' }
+    settings: { activeAccountId:'a_cash', theme:'light', style:'receipt', pin:null }
   };
 }
 function loadState(){
@@ -454,8 +486,8 @@ function renderHistory(){
   let periodTxs = [...state.transactions];
   if(range.from) periodTxs = periodTxs.filter(t=> t.date >= range.from && t.date <= range.to);
 
-  const incomeMap = sumByCurrency(periodTxs.filter(t=>t.type==='income' && !t.isTransfer), t=>t.amount, t=>accCurrency(t.accountId));
-  const expenseMap = sumByCurrency(periodTxs.filter(t=>t.type==='expense' && !t.isTransfer), t=>t.amount, t=>accCurrency(t.accountId));
+  const incomeMap = sumByCurrency(periodTxs.filter(t=>t.type==='income' && !t.isTransfer && !t.isAdjustment), t=>t.amount, t=>accCurrency(t.accountId));
+  const expenseMap = sumByCurrency(periodTxs.filter(t=>t.type==='expense' && !t.isTransfer && !t.isAdjustment), t=>t.amount, t=>accCurrency(t.accountId));
   const netMap = {};
   Object.entries(incomeMap).forEach(([cur,sum])=> netMap[cur] = (netMap[cur]||0) + sum);
   Object.entries(expenseMap).forEach(([cur,sum])=> netMap[cur] = (netMap[cur]||0) - sum);
@@ -467,7 +499,7 @@ function renderHistory(){
   netEl.style.color = (netTotal>=0) ? 'var(--success)' : 'var(--danger)';
 
   const byCat = {};
-  periodTxs.filter(t=>t.type==='expense' && !t.isTransfer).forEach(t=>{
+  periodTxs.filter(t=>t.type==='expense' && !t.isTransfer && !t.isAdjustment).forEach(t=>{
     const cur = accCurrency(t.accountId);
     const key = t.categoryId + '|' + cur;
     if(!byCat[key]) byCat[key] = { sum:0, categoryId:t.categoryId, currency:cur };
@@ -485,8 +517,8 @@ function renderHistory(){
   }).join('') : `<div style="font-size:11px; color:var(--faint); padding:6px 0;">Нет расходов за период</div>`;
 
   let txs = periodTxs.sort((a,b)=> b.date.localeCompare(a.date));
-  if(historyFilter==='income') txs = txs.filter(t=>t.type==='income' && !t.isTransfer);
-  if(historyFilter==='expense') txs = txs.filter(t=>t.type==='expense' && !t.isTransfer);
+  if(historyFilter==='income') txs = txs.filter(t=>t.type==='income' && !t.isTransfer && !t.isAdjustment);
+  if(historyFilter==='expense') txs = txs.filter(t=>t.type==='expense' && !t.isTransfer && !t.isAdjustment);
   if(historyFilter==='transfer') txs = txs.filter(t=>t.isTransfer);
   if(historyFilter==='receipts') txs = txs.filter(t=>t.receiptUrl);
   if(historyFilter==='recurring') txs = txs.filter(t=>t.recurringRuleId);
@@ -505,13 +537,15 @@ function renderHistory(){
       if(t.isTransfer){
         const peer = state.accounts.find(a=>a.id===t.transferPeerAccountId);
         rowLabel = t.note || (t.type==='expense' ? ('Перевод → '+(peer?peer.name:'—')) : ('Перевод ← '+(peer?peer.name:'—')));
+      } else if(t.isAdjustment){
+        rowLabel = t.note || 'Корректировка баланса';
       } else {
         rowLabel = (rule && rule.note) ? rule.note : (cat?cat.name:'—');
       }
       const cur = accCurrency(t.accountId);
       totalMap[cur] = (totalMap[cur]||0) + (t.type==='income'? t.amount : -t.amount);
       html += `<div class="row">
-        <div class="left"><span class="name">${rowLabel}${t.recurringRuleId?' <span class="sub">(регулярный)</span>':''}${t.isTransfer?' <span class="sub">(перевод)</span>':''}</span></div>
+        <div class="left"><span class="name">${rowLabel}${t.recurringRuleId?' <span class="sub">(регулярный)</span>':''}${t.isTransfer?' <span class="sub">(перевод)</span>':''}${t.isAdjustment?' <span class="sub">(корректировка)</span>':''}</span></div>
         <div style="display:flex; align-items:center; gap:8px;">
           ${t.receiptUrl?`<span class="receipt-icon" data-action="viewReceipt" data-id="${t.id}">чек</span>`:''}
           <span class="val ${t.type}">${t.type==='income'?'+':'−'} ${fmtMoney(t.amount, cur)}</span>
@@ -667,15 +701,16 @@ document.getElementById('accountsList').addEventListener('click', e=>{
   const delEl = e.target.closest('[data-action="deleteAccount"]');
   if(delEl){
     const acc = state.accounts.find(a=>a.id===delEl.dataset.id); if(!acc) return;
-    if(state.accounts.length<=1){ alert('Нельзя удалить последний счёт.'); return; }
+    if(state.accounts.length<=1){ showAlert('Нельзя удалить последний счёт.'); return; }
     if(state.recurringRules.some(r=>r.accountId===acc.id && r.active)){
-      alert('Нельзя удалить счёт: на него ссылается активный регулярный платёж. Сначала измените или отключите его.');
+      showAlert('Нельзя удалить счёт: на него ссылается активный регулярный платёж. Сначала измените или отключите его.');
       return;
     }
-    if(!confirm(`Удалить счёт «${acc.name}»? Операции в истории останутся, но счёт исчезнет из списка.`)) return;
-    state.accounts = state.accounts.filter(a=>a.id!==acc.id);
-    if(state.settings.activeAccountId===acc.id) state.settings.activeAccountId = state.accounts[0].id;
-    saveState(state); renderAccounts(); renderHome();
+    showConfirm(`Удалить счёт «${acc.name}»? Операции в истории останутся, но счёт исчезнет из списка.`, ()=>{
+      state.accounts = state.accounts.filter(a=>a.id!==acc.id);
+      if(state.settings.activeAccountId===acc.id) state.settings.activeAccountId = state.accounts[0].id;
+      saveState(state); renderAccounts(); renderHome();
+    });
     return;
   }
 });
@@ -693,7 +728,7 @@ function openEditAccountForm(accId){
         <select id="f_currency">${CURRENCIES.map(c=>`<option value="${c.code}" ${(acc.currency||'RUB')===c.code?'selected':''}>${c.label}</option>`).join('')}</select>
       </div>
     </div>
-    <div class="field"><label>Текущий баланс (можно скорректировать)</label><input id="f_balance" type="number" value="${acc.balance}"></div>
+    <div class="field"><label>Текущий баланс (изменение запишется как корректировка в историю)</label><input id="f_balance" type="number" value="${acc.balance}"></div>
     <div class="sheet-actions">
       <button data-action="close">Отмена</button>
       <button class="primary" data-action="saveEditAccount" data-id="${acc.id}">Сохранить</button>
@@ -702,7 +737,7 @@ function openEditAccountForm(accId){
 
 document.getElementById('addTransferBtn').addEventListener('click', openTransferForm);
 function openTransferForm(){
-  if(state.accounts.length<2){ alert('Нужно как минимум два счёта для перевода.'); return; }
+  if(state.accounts.length<2){ showAlert('Нужно как минимум два счёта для перевода.'); return; }
   const fromId = state.settings.activeAccountId || state.accounts[0].id;
   const toCandidate = state.accounts.find(a=>a.id!==fromId) || state.accounts[0];
   const accOptionsFrom = state.accounts.map(a=>`<option value="${a.id}" ${a.id===fromId?'selected':''}>${a.name} (${currencySymbol(a.currency)})</option>`).join('');
@@ -801,21 +836,23 @@ document.getElementById('historyList').addEventListener('click', e=>{
   if(delEl){
     const tx = state.transactions.find(t=>t.id===delEl.dataset.id); if(!tx) return;
     if(tx.isTransfer){
-      if(!confirm('Отменить этот перевод? Будут отменены обе стороны операции.')) return;
-      const peer = state.transactions.find(t=>t.transferId===tx.transferId && t.id!==tx.id);
-      [tx, peer].filter(Boolean).forEach(t=>{
-        const acc = state.accounts.find(a=>a.id===t.accountId);
-        if(acc) acc.balance -= (t.type==='income'? t.amount : -t.amount);
+      showConfirm('Отменить этот перевод? Будут отменены обе стороны операции.', ()=>{
+        const peer = state.transactions.find(t=>t.transferId===tx.transferId && t.id!==tx.id);
+        [tx, peer].filter(Boolean).forEach(t=>{
+          const acc = state.accounts.find(a=>a.id===t.accountId);
+          if(acc) acc.balance -= (t.type==='income'? t.amount : -t.amount);
+        });
+        state.transactions = state.transactions.filter(t=> t.id!==tx.id && !(peer && t.id===peer.id));
+        saveState(state); renderHistory(); renderAccounts(); renderHome();
       });
-      state.transactions = state.transactions.filter(t=> t.id!==tx.id && !(peer && t.id===peer.id));
-      saveState(state); renderHistory(); renderAccounts(); renderHome();
       return;
     }
-    if(!confirm('Отменить эту операцию?')) return;
-    const acc = state.accounts.find(a=>a.id===tx.accountId);
-    if(acc) acc.balance -= (tx.type==='income'? tx.amount : -tx.amount);
-    state.transactions = state.transactions.filter(t=>t.id!==tx.id);
-    saveState(state); renderHistory(); renderAccounts(); renderHome();
+    showConfirm('Отменить эту операцию?', ()=>{
+      const acc = state.accounts.find(a=>a.id===tx.accountId);
+      if(acc) acc.balance -= (tx.type==='income'? tx.amount : -tx.amount);
+      state.transactions = state.transactions.filter(t=>t.id!==tx.id);
+      saveState(state); renderHistory(); renderAccounts(); renderHome();
+    });
     return;
   }
 });
@@ -933,6 +970,12 @@ document.getElementById('settingsBtn').addEventListener('click', ()=>{
     <h2>Настройки</h2>
     <div class="switch-row"><span>Тёмная тема</span><input type="checkbox" id="s_dark" ${state.settings.theme==='dark'?'checked':''}></div>
     <div class="switch-row"><span>Стиль e-ink</span><input type="checkbox" id="s_eink" ${state.settings.style==='eink'?'checked':''}></div>
+    <div class="switch-row"><span>Защита PIN-кодом (${state.settings.pin?'установлен':'не установлен'})</span></div>
+    <div class="sheet-actions">
+      <button data-action="setupPin">${state.settings.pin?'Изменить PIN':'Установить PIN'}</button>
+      ${state.settings.pin?'<button data-action="removePin" style="color:var(--danger);">Убрать PIN</button>':''}
+    </div>
+    <div style="font-size:9px; color:var(--faint); margin:-6px 0 10px;">PIN хранится локально на устройстве и защищает только от случайного открытия приложения — это не шифрование данных.</div>
     <div class="sheet-actions">
       <button data-action="exportData">Экспорт данных</button>
       <button data-action="importData">Импорт данных</button>
@@ -949,6 +992,35 @@ function openSheet(html){
   document.getElementById('overlay').classList.add('open');
 }
 function closeSheet(){ document.getElementById('overlay').classList.remove('open'); }
+
+/* ---------- custom alert / confirm (replace native alert()/confirm()) ---------- */
+function showAlert(message){
+  document.getElementById('alertMessage').textContent = message;
+  document.getElementById('alertOverlay').classList.add('open');
+}
+document.getElementById('alertOkBtn').addEventListener('click', ()=>{
+  document.getElementById('alertOverlay').classList.remove('open');
+});
+document.getElementById('alertOverlay').addEventListener('click', e=>{
+  if(e.target.id==='alertOverlay') document.getElementById('alertOverlay').classList.remove('open');
+});
+let _confirmCallback = null;
+function showConfirm(message, onConfirm){
+  document.getElementById('confirmMessage').textContent = message;
+  _confirmCallback = onConfirm;
+  document.getElementById('confirmOverlay').classList.add('open');
+}
+function _closeConfirm(){ document.getElementById('confirmOverlay').classList.remove('open'); _confirmCallback = null; }
+document.getElementById('confirmYesBtn').addEventListener('click', ()=>{
+  const cb = _confirmCallback;
+  document.getElementById('confirmOverlay').classList.remove('open');
+  _confirmCallback = null;
+  if(cb) cb();
+});
+document.getElementById('confirmNoBtn').addEventListener('click', _closeConfirm);
+document.getElementById('confirmOverlay').addEventListener('click', e=>{
+  if(e.target.id==='confirmOverlay') _closeConfirm();
+});
 document.getElementById('overlay').addEventListener('click', e=>{
   if(e.target.id==='overlay') closeSheet();
 });
@@ -994,7 +1066,14 @@ document.getElementById('sheetContent').addEventListener('click', e=>{
     acc.name = document.getElementById('f_name').value.trim() || acc.name;
     acc.type = document.getElementById('f_type').value;
     acc.currency = document.getElementById('f_currency').value;
-    acc.balance = parseFloat(document.getElementById('f_balance').value) || 0;
+    const newBalance = parseFloat(document.getElementById('f_balance').value) || 0;
+    const diff = newBalance - acc.balance;
+    if(Math.abs(diff) > 0.0001){
+      const tx = { id:uid(), accountId:acc.id, categoryId:null, type: diff>0?'income':'expense',
+        amount: Math.abs(diff), date: todayStr(), note:'Корректировка баланса', isAdjustment:true };
+      state.transactions.unshift(tx);
+    }
+    acc.balance = newBalance;
     saveState(state); closeSheet(); renderAccounts(); renderHome();
   }
 
@@ -1005,11 +1084,11 @@ document.getElementById('sheetContent').addEventListener('click', e=>{
     const rate = parseFloat(document.getElementById('tr_rate').value) || 0;
     const date = document.getElementById('tr_date').value || todayStr();
     const note = document.getElementById('tr_note').value.trim();
-    if(fromId===toId){ alert('Выберите разные счета.'); return; }
-    if(amountFrom<=0){ alert('Укажите сумму больше нуля.'); return; }
+    if(fromId===toId){ showAlert('Выберите разные счета.'); return; }
+    if(amountFrom<=0){ showAlert('Укажите сумму больше нуля.'); return; }
     const fromCurCheck = accCurrency(fromId), toCurCheck = accCurrency(toId);
     const amountTo = computeTransferAmountTo(fromCurCheck, toCurCheck, amountFrom, rate);
-    if(amountTo<=0){ alert('Укажите курс больше нуля.'); return; }
+    if(amountTo<=0){ showAlert('Укажите курс больше нуля.'); return; }
     const fromAcc = state.accounts.find(a=>a.id===fromId);
     const toAcc = state.accounts.find(a=>a.id===toId);
     if(!fromAcc || !toAcc) return;
@@ -1056,10 +1135,11 @@ document.getElementById('sheetContent').addEventListener('click', e=>{
   }
 
   if(action==='deleteRule'){
-    if(!confirm('Удалить этот регулярный платёж?')) return;
-    state.recurringRules = state.recurringRules.filter(r=>r.id!==btn.dataset.id);
-    state.dueReminders = state.dueReminders.filter(id=>id!==btn.dataset.id);
-    saveState(state); closeSheet(); renderRecurring(); renderHome();
+    showConfirm('Удалить этот регулярный платёж?', ()=>{
+      state.recurringRules = state.recurringRules.filter(r=>r.id!==btn.dataset.id);
+      state.dueReminders = state.dueReminders.filter(id=>id!==btn.dataset.id);
+      saveState(state); closeSheet(); renderRecurring(); renderHome();
+    });
   }
 
   if(action==='saveCategory'){
@@ -1108,6 +1188,19 @@ document.getElementById('sheetContent').addEventListener('click', e=>{
     state.settings.style = document.getElementById('s_eink').checked ? 'eink' : 'receipt';
     saveState(state); applyTheme(); closeSheet();
   }
+
+  if(action==='setupPin'){
+    closeSheet();
+    openPinSetup();
+  }
+
+  if(action==='removePin'){
+    showConfirm('Убрать PIN-защиту?', ()=>{
+      state.settings.pin = null;
+      saveState(state);
+      closeSheet();
+    });
+  }
 });
 document.addEventListener('change', e=>{
   if(e.target.id !== 'importFile') return;
@@ -1119,9 +1212,9 @@ document.addEventListener('change', e=>{
       if(data.accounts && data.transactions){
         state = data; saveState(state); applyTheme();
         closeSheet(); showScreen('home');
-        alert('Данные импортированы');
-      } else { alert('Файл не похож на бэкап этого приложения'); }
-    }catch(err){ alert('Не удалось прочитать файл'); }
+        showAlert('Данные импортированы');
+      } else { showAlert('Файл не похож на бэкап этого приложения'); }
+    }catch(err){ showAlert('Не удалось прочитать файл'); }
   };
   reader.readAsText(file);
 });
@@ -1131,6 +1224,74 @@ function applyTheme(){
   document.body.classList.toggle('dark', state.settings.theme==='dark');
   document.body.classList.toggle('eink', state.settings.style==='eink');
 }
+
+/* ---------- PIN lock ---------- */
+let pinInput = '';
+let pinMode = 'unlock'; // 'unlock' | 'setup1' | 'setup2'
+let pinSetupFirst = '';
+function renderPinDots(){
+  let html = '';
+  for(let i=0;i<4;i++){
+    const filled = i < pinInput.length;
+    html += `<div style="width:12px; height:12px; border-radius:50%; border:1px solid var(--text); background:${filled?'var(--text)':'transparent'};"></div>`;
+  }
+  document.getElementById('pinDots').innerHTML = html;
+}
+function openPinLock(){
+  pinMode = 'unlock'; pinInput = '';
+  document.getElementById('pinTitle').textContent = 'Введите PIN-код';
+  document.getElementById('pinError').textContent = '';
+  document.getElementById('pinCancelBtn').style.visibility = 'hidden';
+  renderPinDots();
+  document.getElementById('pinOverlay').classList.add('open');
+}
+function openPinSetup(){
+  pinMode = 'setup1'; pinInput = ''; pinSetupFirst = '';
+  document.getElementById('pinTitle').textContent = 'Придумайте PIN-код (4 цифры)';
+  document.getElementById('pinError').textContent = '';
+  document.getElementById('pinCancelBtn').style.visibility = 'visible';
+  renderPinDots();
+  document.getElementById('pinOverlay').classList.add('open');
+}
+function closePinOverlay(){ document.getElementById('pinOverlay').classList.remove('open'); }
+document.getElementById('pinKeypad').addEventListener('click', e=>{
+  const btn = e.target.closest('button'); if(!btn) return;
+  const k = btn.dataset.k;
+  if(k==='cancel'){ closePinOverlay(); return; }
+  if(k==='back'){ pinInput = pinInput.slice(0,-1); renderPinDots(); return; }
+  if(!k || pinInput.length>=4) return;
+  pinInput += k;
+  renderPinDots();
+  if(pinInput.length===4){
+    if(pinMode==='unlock'){
+      if(pinInput===state.settings.pin){
+        closePinOverlay();
+      } else {
+        document.getElementById('pinError').textContent = 'Неверный PIN';
+        pinInput=''; renderPinDots();
+      }
+    } else if(pinMode==='setup1'){
+      pinSetupFirst = pinInput; pinInput='';
+      pinMode = 'setup2';
+      document.getElementById('pinTitle').textContent = 'Повторите PIN-код';
+      document.getElementById('pinError').textContent = '';
+      renderPinDots();
+    } else if(pinMode==='setup2'){
+      if(pinInput===pinSetupFirst){
+        state.settings.pin = pinInput;
+        saveState(state);
+        closePinOverlay();
+        showAlert('PIN-код установлен.');
+      } else {
+        document.getElementById('pinError').textContent = 'PIN не совпадает, начните заново';
+        pinInput=''; pinMode='setup1';
+        document.getElementById('pinTitle').textContent = 'Придумайте PIN-код (4 цифры)';
+        renderPinDots();
+      }
+    }
+  }
+});
+if(state.settings.pin) openPinLock();
 
 /* ---------- easter egg: runner game ---------- */
 let eggTapCount = 0;
