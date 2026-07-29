@@ -171,6 +171,7 @@
     <div class="section-title"><span id="accountsTitleTap">Счета</span><span id="accountsTotal" style="color:var(--faint); font-size:10px;"></span></div>
     <div class="card" style="padding:4px 14px;" id="accountsList"></div>
     <button class="addbtn" id="addAccountBtn">+ добавить счёт</button>
+    <button class="addbtn" id="addTransferBtn">⇄ перевод между счетами</button>
   </section>
 
   <!-- HISTORY -->
@@ -199,6 +200,7 @@
       <div class="chip active" data-f="all">Все</div>
       <div class="chip" data-f="income">Доход</div>
       <div class="chip" data-f="expense">Расход</div>
+      <div class="chip" data-f="transfer">Переводы</div>
       <div class="chip" data-f="receipts">С чеками</div>
       <div class="chip" data-f="recurring">Регулярные</div>
     </div>
@@ -440,8 +442,8 @@ function renderHistory(){
   let periodTxs = [...state.transactions];
   if(range.from) periodTxs = periodTxs.filter(t=> t.date >= range.from && t.date <= range.to);
 
-  const incomeMap = sumByCurrency(periodTxs.filter(t=>t.type==='income'), t=>t.amount, t=>accCurrency(t.accountId));
-  const expenseMap = sumByCurrency(periodTxs.filter(t=>t.type==='expense'), t=>t.amount, t=>accCurrency(t.accountId));
+  const incomeMap = sumByCurrency(periodTxs.filter(t=>t.type==='income' && !t.isTransfer), t=>t.amount, t=>accCurrency(t.accountId));
+  const expenseMap = sumByCurrency(periodTxs.filter(t=>t.type==='expense' && !t.isTransfer), t=>t.amount, t=>accCurrency(t.accountId));
   const netMap = {};
   Object.entries(incomeMap).forEach(([cur,sum])=> netMap[cur] = (netMap[cur]||0) + sum);
   Object.entries(expenseMap).forEach(([cur,sum])=> netMap[cur] = (netMap[cur]||0) - sum);
@@ -453,7 +455,7 @@ function renderHistory(){
   netEl.style.color = (netTotal>=0) ? 'var(--success)' : 'var(--danger)';
 
   const byCat = {};
-  periodTxs.filter(t=>t.type==='expense').forEach(t=>{
+  periodTxs.filter(t=>t.type==='expense' && !t.isTransfer).forEach(t=>{
     const cur = accCurrency(t.accountId);
     const key = t.categoryId + '|' + cur;
     if(!byCat[key]) byCat[key] = { sum:0, categoryId:t.categoryId, currency:cur };
@@ -471,8 +473,9 @@ function renderHistory(){
   }).join('') : `<div style="font-size:11px; color:var(--faint); padding:6px 0;">Нет расходов за период</div>`;
 
   let txs = periodTxs.sort((a,b)=> b.date.localeCompare(a.date));
-  if(historyFilter==='income') txs = txs.filter(t=>t.type==='income');
-  if(historyFilter==='expense') txs = txs.filter(t=>t.type==='expense');
+  if(historyFilter==='income') txs = txs.filter(t=>t.type==='income' && !t.isTransfer);
+  if(historyFilter==='expense') txs = txs.filter(t=>t.type==='expense' && !t.isTransfer);
+  if(historyFilter==='transfer') txs = txs.filter(t=>t.isTransfer);
   if(historyFilter==='receipts') txs = txs.filter(t=>t.receiptUrl);
   if(historyFilter==='recurring') txs = txs.filter(t=>t.recurringRuleId);
 
@@ -486,15 +489,21 @@ function renderHistory(){
     groups[date].forEach(t=>{
       const cat = state.categories.find(c=>c.id===t.categoryId);
       const rule = t.recurringRuleId ? state.recurringRules.find(r=>r.id===t.recurringRuleId) : null;
-      const rowLabel = (rule && rule.note) ? rule.note : (cat?cat.name:'—');
+      let rowLabel;
+      if(t.isTransfer){
+        const peer = state.accounts.find(a=>a.id===t.transferPeerAccountId);
+        rowLabel = t.note || (t.type==='expense' ? ('Перевод → '+(peer?peer.name:'—')) : ('Перевод ← '+(peer?peer.name:'—')));
+      } else {
+        rowLabel = (rule && rule.note) ? rule.note : (cat?cat.name:'—');
+      }
       const cur = accCurrency(t.accountId);
       totalMap[cur] = (totalMap[cur]||0) + (t.type==='income'? t.amount : -t.amount);
       html += `<div class="row">
-        <div class="left"><span class="name">${rowLabel}${t.recurringRuleId?' <span class="sub">(регулярный)</span>':''}</span></div>
+        <div class="left"><span class="name">${rowLabel}${t.recurringRuleId?' <span class="sub">(регулярный)</span>':''}${t.isTransfer?' <span class="sub">(перевод)</span>':''}</span></div>
         <div style="display:flex; align-items:center; gap:8px;">
           ${t.receiptUrl?`<span class="receipt-icon" data-action="viewReceipt" data-id="${t.id}">чек</span>`:''}
           <span class="val ${t.type}">${t.type==='income'?'+':'−'} ${fmtMoney(t.amount, cur)}</span>
-          <span class="receipt-icon" data-action="editTx" data-id="${t.id}">✎</span>
+          ${t.isTransfer?'':`<span class="receipt-icon" data-action="editTx" data-id="${t.id}">✎</span>`}
           <span class="receipt-icon" data-action="deleteTx" data-id="${t.id}" style="border-color:var(--danger); color:var(--danger);">✕</span>
         </div>
       </div>`;
@@ -673,6 +682,31 @@ function openEditAccountForm(accId){
     </div>`);
 }
 
+document.getElementById('addTransferBtn').addEventListener('click', openTransferForm);
+function openTransferForm(){
+  if(state.accounts.length<2){ alert('Нужно как минимум два счёта для перевода.'); return; }
+  const fromId = state.settings.activeAccountId || state.accounts[0].id;
+  const toCandidate = state.accounts.find(a=>a.id!==fromId) || state.accounts[0];
+  const accOptionsFrom = state.accounts.map(a=>`<option value="${a.id}" ${a.id===fromId?'selected':''}>${a.name} (${currencySymbol(a.currency)})</option>`).join('');
+  const accOptionsTo = state.accounts.map(a=>`<option value="${a.id}" ${a.id===toCandidate.id?'selected':''}>${a.name} (${currencySymbol(a.currency)})</option>`).join('');
+  openSheet(`
+    <button class="close-x" data-action="close">✕</button>
+    <h2>Перевод между счетами</h2>
+    <div class="field"><label>Откуда</label><select id="tr_from">${accOptionsFrom}</select></div>
+    <div class="field"><label>Куда</label><select id="tr_to">${accOptionsTo}</select></div>
+    <div class="field-row">
+      <div class="field"><label>Сумма списания</label><input id="tr_amount_from" type="number" placeholder="0"></div>
+      <div class="field"><label>Сумма зачисления</label><input id="tr_amount_to" type="number" placeholder="0"></div>
+    </div>
+    <div style="font-size:10px; color:var(--faint); margin:-4px 0 10px;">Если валюты счетов разные — укажите сумму зачисления по факту обмена (курс не считается автоматически).</div>
+    <div class="field"><label>Дата</label><input id="tr_date" type="date" value="${todayStr()}"></div>
+    <div class="field"><label>Заметка (необязательно)</label><input id="tr_note" placeholder="например, Пополнение карты"></div>
+    <div class="sheet-actions">
+      <button data-action="close">Отмена</button>
+      <button class="primary" data-action="saveTransfer">Перевести</button>
+    </div>`);
+}
+
 /* ---------- history interactions ---------- */
 document.getElementById('historyFilters').addEventListener('click', e=>{
   const chip = e.target.closest('.chip'); if(!chip) return;
@@ -716,6 +750,17 @@ document.getElementById('historyList').addEventListener('click', e=>{
   const delEl = e.target.closest('[data-action="deleteTx"]');
   if(delEl){
     const tx = state.transactions.find(t=>t.id===delEl.dataset.id); if(!tx) return;
+    if(tx.isTransfer){
+      if(!confirm('Отменить этот перевод? Будут отменены обе стороны операции.')) return;
+      const peer = state.transactions.find(t=>t.transferId===tx.transferId && t.id!==tx.id);
+      [tx, peer].filter(Boolean).forEach(t=>{
+        const acc = state.accounts.find(a=>a.id===t.accountId);
+        if(acc) acc.balance -= (t.type==='income'? t.amount : -t.amount);
+      });
+      state.transactions = state.transactions.filter(t=> t.id!==tx.id && !(peer && t.id===peer.id));
+      saveState(state); renderHistory(); renderAccounts(); renderHome();
+      return;
+    }
     if(!confirm('Отменить эту операцию?')) return;
     const acc = state.accounts.find(a=>a.id===tx.accountId);
     if(acc) acc.balance -= (tx.type==='income'? tx.amount : -tx.amount);
@@ -901,6 +946,29 @@ document.getElementById('sheetContent').addEventListener('click', e=>{
     acc.currency = document.getElementById('f_currency').value;
     acc.balance = parseFloat(document.getElementById('f_balance').value) || 0;
     saveState(state); closeSheet(); renderAccounts(); renderHome();
+  }
+
+  if(action==='saveTransfer'){
+    const fromId = document.getElementById('tr_from').value;
+    const toId = document.getElementById('tr_to').value;
+    const amountFrom = parseFloat(document.getElementById('tr_amount_from').value) || 0;
+    const amountToRaw = document.getElementById('tr_amount_to').value;
+    const amountTo = amountToRaw ? (parseFloat(amountToRaw) || 0) : amountFrom;
+    const date = document.getElementById('tr_date').value || todayStr();
+    const note = document.getElementById('tr_note').value.trim();
+    if(fromId===toId){ alert('Выберите разные счета.'); return; }
+    if(amountFrom<=0 || amountTo<=0){ alert('Укажите сумму больше нуля.'); return; }
+    const fromAcc = state.accounts.find(a=>a.id===fromId);
+    const toAcc = state.accounts.find(a=>a.id===toId);
+    if(!fromAcc || !toAcc) return;
+    const transferId = uid();
+    const txOut = { id:uid(), accountId:fromId, categoryId:null, type:'expense', amount:amountFrom, date, note: note || ('Перевод → '+toAcc.name), isTransfer:true, transferId, transferPeerAccountId: toId };
+    const txIn  = { id:uid(), accountId:toId, categoryId:null, type:'income', amount:amountTo, date, note: note || ('Перевод ← '+fromAcc.name), isTransfer:true, transferId, transferPeerAccountId: fromId };
+    state.transactions.unshift(txIn);
+    state.transactions.unshift(txOut);
+    fromAcc.balance -= amountFrom;
+    toAcc.balance += amountTo;
+    saveState(state); closeSheet(); renderAccounts(); renderHistory(); renderHome();
   }
 
   if(action==='saveEditTx'){
