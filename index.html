@@ -696,15 +696,47 @@ function openTransferForm(){
     <div class="field"><label>Куда</label><select id="tr_to">${accOptionsTo}</select></div>
     <div class="field-row">
       <div class="field"><label>Сумма списания</label><input id="tr_amount_from" type="number" placeholder="0"></div>
-      <div class="field"><label>Сумма зачисления</label><input id="tr_amount_to" type="number" placeholder="0"></div>
+      <div class="field"><label id="tr_rate_label">Курс</label><input id="tr_rate" type="number" step="any" value="1"></div>
     </div>
-    <div style="font-size:10px; color:var(--faint); margin:-4px 0 10px;">Если валюты счетов разные — укажите сумму зачисления по факту обмена (курс не считается автоматически).</div>
+    <div id="tr_preview" style="font-size:10px; color:var(--faint); margin:-4px 0 10px;">Курс указывается вручную: сколько единиц счёта «Откуда» стоит 1 единица счёта «Куда».</div>
     <div class="field"><label>Дата</label><input id="tr_date" type="date" value="${todayStr()}"></div>
     <div class="field"><label>Заметка (необязательно)</label><input id="tr_note" placeholder="например, Пополнение карты"></div>
     <div class="sheet-actions">
       <button data-action="close">Отмена</button>
       <button class="primary" data-action="saveTransfer">Перевести</button>
     </div>`);
+  updateTransferPreview();
+  document.getElementById('tr_from').addEventListener('change', updateTransferPreview);
+  document.getElementById('tr_to').addEventListener('change', updateTransferPreview);
+  document.getElementById('tr_amount_from').addEventListener('input', updateTransferPreview);
+  document.getElementById('tr_rate').addEventListener('input', updateTransferPreview);
+}
+function computeTransferAmountTo(fromCur, toCur, amountFrom, rate){
+  if(fromCur===toCur) return amountFrom;
+  return rate>0 ? amountFrom / rate : 0;
+}
+function updateTransferPreview(){
+  const fromSel = document.getElementById('tr_from'); const toSel = document.getElementById('tr_to');
+  if(!fromSel || !toSel) return;
+  const fromCur = accCurrency(fromSel.value);
+  const toCur = accCurrency(toSel.value);
+  const sameCur = fromCur === toCur;
+  const rateLabel = document.getElementById('tr_rate_label');
+  const rateInput = document.getElementById('tr_rate');
+  const preview = document.getElementById('tr_preview');
+  if(sameCur){
+    rateLabel.textContent = 'Курс';
+    rateInput.value = 1; rateInput.disabled = true;
+  } else {
+    rateLabel.textContent = `Курс (1 ${currencySymbol(toCur)} = ? ${currencySymbol(fromCur)})`;
+    rateInput.disabled = false;
+  }
+  const amountFrom = parseFloat(document.getElementById('tr_amount_from').value) || 0;
+  const rate = parseFloat(rateInput.value) || 0;
+  const amountTo = computeTransferAmountTo(fromCur, toCur, amountFrom, rate);
+  preview.textContent = amountFrom>0
+    ? `Будет зачислено: ${fmtMoney(amountTo, toCur)}`
+    : 'Курс указывается вручную: сколько единиц счёта «Откуда» стоит 1 единица счёта «Куда».';
 }
 
 /* ---------- history interactions ---------- */
@@ -952,12 +984,14 @@ document.getElementById('sheetContent').addEventListener('click', e=>{
     const fromId = document.getElementById('tr_from').value;
     const toId = document.getElementById('tr_to').value;
     const amountFrom = parseFloat(document.getElementById('tr_amount_from').value) || 0;
-    const amountToRaw = document.getElementById('tr_amount_to').value;
-    const amountTo = amountToRaw ? (parseFloat(amountToRaw) || 0) : amountFrom;
+    const rate = parseFloat(document.getElementById('tr_rate').value) || 0;
     const date = document.getElementById('tr_date').value || todayStr();
     const note = document.getElementById('tr_note').value.trim();
     if(fromId===toId){ alert('Выберите разные счета.'); return; }
-    if(amountFrom<=0 || amountTo<=0){ alert('Укажите сумму больше нуля.'); return; }
+    if(amountFrom<=0){ alert('Укажите сумму больше нуля.'); return; }
+    const fromCurCheck = accCurrency(fromId), toCurCheck = accCurrency(toId);
+    const amountTo = computeTransferAmountTo(fromCurCheck, toCurCheck, amountFrom, rate);
+    if(amountTo<=0){ alert('Укажите курс больше нуля.'); return; }
     const fromAcc = state.accounts.find(a=>a.id===fromId);
     const toAcc = state.accounts.find(a=>a.id===toId);
     if(!fromAcc || !toAcc) return;
