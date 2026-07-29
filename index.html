@@ -50,7 +50,7 @@
   .account-chip{font-size:12px; color:var(--muted); border:none; background:none; font-family:inherit; padding:0;}
   .balance-row{display:flex; justify-content:space-between; padding:10px 14px; margin:0 14px; border-top:1px dashed var(--border); border-bottom:1px dashed var(--border);}
   .balance-row > div{display:flex; flex-direction:column; gap:2px;}
-  .balance-label{font-size:9px; color:var(--faint);}
+  .balance-label{font-size:10px; color:var(--faint);}
   .balance-val{font-size:15px; font-weight:600; color:var(--text);}
   .seg{display:flex; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); margin:10px 14px 0; padding:3px;}
   .seg > div{flex:1; text-align:center; padding:7px 0; font-size:12px; cursor:pointer; color:var(--muted);}
@@ -60,12 +60,12 @@
   .amount{font-size:44px; font-weight:600; letter-spacing:0.5px;}
   .amount.expense{color:var(--danger);}
   .amount.income{color:var(--success);}
-  .amount-sub{font-size:10px; color:var(--faint); margin-top:2px;}
+  .amount-sub{font-size:11px; color:var(--faint); margin-top:2px;}
   .cats{display:flex; gap:8px; overflow-x:auto; padding:12px 14px; border-bottom:1px dashed var(--border);}
   .cat{display:flex; flex-direction:column; align-items:center; gap:4px; min-width:52px; cursor:pointer;}
   .cat .ic{width:34px; height:34px; border-radius:50%; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:11px; color:var(--muted);}
   .cat.active .ic{background:var(--accent); color:var(--bg); border-color:var(--accent);}
-  .cat span{font-size:9px; color:var(--muted); text-align:center; line-height:1.2;}
+  .cat span{font-size:10px; color:var(--muted); text-align:center; line-height:1.2;}
   .keypad{display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--border);}
   .keypad button{background:var(--card); border:none; padding:17px 0; font-size:22px; color:var(--text); font-family:inherit;}
   .save-row{padding:12px 14px 16px;}
@@ -80,16 +80,16 @@
   .row:last-child{border-bottom:none;}
   .row .left{display:flex; align-items:center; gap:10px;}
   .row .name{font-size:12px;}
-  .row .sub{font-size:9px; color:var(--faint);}
+  .row .sub{font-size:10px; color:var(--faint);}
   .row .val{font-weight:600; font-size:13px;}
   .val.expense{color:var(--danger);} .val.income{color:var(--success);}
   .addbtn{width:100%; margin-top:12px; padding:10px 0; font-size:11px; border:1px dashed var(--border); background:none; color:var(--muted); border-radius:var(--radius); font-family:inherit;}
   .chips{display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap;}
-  .chip{font-size:10px; padding:5px 11px; border-radius:20px; border:1px solid var(--border); color:var(--muted); cursor:pointer;}
+  .chip{font-size:11px; padding:6px 12px; border-radius:20px; border:1px solid var(--border); color:var(--muted); cursor:pointer;}
   .chip.active{background:var(--accent); color:var(--bg); border-color:var(--accent);}
-  .date-label{font-size:9px; color:var(--faint); margin:12px 0 4px;}
+  .date-label{font-size:10px; color:var(--faint); margin:12px 0 4px;}
   .total-row{display:flex; justify-content:space-between; padding-top:10px; margin-top:8px; border-top:1px dashed var(--border); font-size:11px; font-weight:600;}
-  .receipt-icon{font-size:9px; border:1px solid var(--border); border-radius:3px; padding:1px 4px; color:var(--muted); cursor:pointer;}
+  .receipt-icon{font-size:11px; border:1px solid var(--border); border-radius:4px; padding:5px 9px; margin-left:4px; color:var(--muted); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; min-width:26px; min-height:26px;}
   .cat-bar-row{margin-bottom:8px;}
   .cat-bar-top{display:flex; justify-content:space-between; font-size:11px; margin-bottom:3px;}
   .cat-bar-track{height:4px; background:var(--bg); border-radius:2px; overflow:hidden;}
@@ -97,7 +97,7 @@
 
   /* Nav */
   nav{position:fixed; bottom:0; left:0; right:0; background:var(--card); border-top:1px solid var(--border); display:flex; max-width:430px; margin:0 auto; padding-bottom:env(safe-area-inset-bottom);}
-  nav button{flex:1; background:none; border:none; padding:11px 0 9px; font-family:inherit; font-size:9px; color:var(--faint); display:flex; flex-direction:column; align-items:center; gap:3px;}
+  nav button{flex:1; background:none; border:none; padding:11px 0 9px; font-family:inherit; font-size:10px; color:var(--faint); display:flex; flex-direction:column; align-items:center; gap:3px;}
   nav button.active{color:var(--text); font-weight:600;}
   nav .dot{width:5px; height:5px; border-radius:50%; background:transparent;}
   nav button.active .dot{background:var(--text);}
@@ -108,7 +108,7 @@
   .sheet{background:var(--card); width:100%; max-width:430px; border-radius:14px 14px 0 0; padding:16px 16px calc(16px + env(safe-area-inset-bottom)); max-height:85vh; overflow-y:auto;}
   .sheet h2{font-size:14px; margin:0 0 12px;}
   .field{margin-bottom:10px;}
-  .field label{display:block; font-size:10px; color:var(--muted); margin-bottom:4px;}
+  .field label{display:block; font-size:11px; color:var(--muted); margin-bottom:4px;}
   .field input, .field select{width:100%; padding:9px 10px; border:1px solid var(--border); border-radius:var(--radius); background:var(--bg); color:var(--text); font-family:inherit; font-size:12px;}
   .field-row{display:flex; gap:8px;}
   .field-row .field{flex:1;}
@@ -119,9 +119,18 @@
   .sheet{position:relative;}
   .switch-row{display:flex; justify-content:space-between; align-items:center; font-size:11px; padding:8px 0;}
   img.receipt-preview{max-width:100%; border-radius:var(--radius); margin-top:8px; border:1px solid var(--border);}
+  .toast{position:fixed; top:14px; left:50%; transform:translateX(-50%) translateY(-10px); background:var(--text); color:var(--bg); font-size:11px; padding:9px 16px; border-radius:20px; opacity:0; pointer-events:none; transition:opacity .25s, transform .25s; z-index:90; max-width:82%; text-align:center;}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+  .search-row{margin-bottom:10px;}
+  .search-row input{width:100%; padding:9px 10px; border:1px solid var(--border); border-radius:var(--radius); background:var(--card); color:var(--text); font-family:inherit; font-size:12px;}
+  .cat-bar-row{cursor:pointer;}
+  .rule-progress{height:3px; background:var(--bg); border-radius:2px; overflow:hidden; margin-top:5px;}
+  .rule-progress-fill{height:100%; background:var(--accent); opacity:0.55;}
 </style>
 </head>
 <body>
+
+<div id="toast" class="toast"></div>
 
 <header>
   <h1>ФИНАНСЫ · ЧЕК</h1>
@@ -135,7 +144,7 @@
     <div class="card">
       <div class="toprow">
         <button class="account-chip" id="accountChip">Счёт ▾</button>
-        <span style="font-size:10px; color:var(--faint);" id="todayLabel"></span>
+        <span style="font-size:11px; color:var(--faint);" id="todayLabel"></span>
       </div>
       <div class="balance-row">
         <div><span class="balance-label">баланс счёта</span><span class="balance-val" id="accBalance">0 ₽</span></div>
@@ -156,11 +165,14 @@
         <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button>
         <button data-k=",">,</button><button data-k="0">0</button><button data-k="back">⌫</button>
       </div>
+      <div id="repeatLastRow" style="display:none; padding:0 14px 10px;">
+        <button id="repeatLastBtn" style="width:100%; padding:9px 0; border:1px dashed var(--border); background:none; color:var(--muted); border-radius:var(--radius); font-family:inherit; font-size:11px;"></button>
+      </div>
       <div class="save-row" style="display:flex; gap:8px; padding:12px 14px 16px;">
         <button id="attachReceiptBtn" style="flex:0 0 auto; width:44px; padding:13px 0; border:1px solid var(--border); background:var(--card); color:var(--text); border-radius:var(--radius); font-family:inherit;">🧾</button>
         <button id="saveBtn" style="flex:1; background:var(--accent); color:var(--bg); border:none; padding:13px 0; font-size:13px; font-weight:600; border-radius:var(--radius); font-family:inherit;">Записать</button>
       </div>
-      <div id="receiptPreviewRow" style="display:none; padding:0 14px 14px; font-size:10px; color:var(--muted);"></div>
+      <div id="receiptPreviewRow" style="display:none; padding:0 14px 14px; font-size:11px; color:var(--muted);"></div>
       <input type="file" id="receiptInput" accept="image/*" capture="environment" style="display:none;">
     </div>
     <div id="remindersBox"></div>
@@ -168,7 +180,7 @@
 
   <!-- ACCOUNTS -->
   <section class="screen" id="screen-accounts">
-    <div class="section-title"><span id="accountsTitleTap">Счета</span><span id="accountsTotal" style="color:var(--faint); font-size:10px;"></span></div>
+    <div class="section-title"><span id="accountsTitleTap">Счета</span><span id="accountsTotal" style="color:var(--faint); font-size:11px;"></span></div>
     <div class="card" style="padding:4px 14px;" id="accountsList"></div>
     <button class="addbtn" id="addAccountBtn">+ добавить счёт</button>
     <button class="addbtn" id="addTransferBtn">⇄ перевод между счетами</button>
@@ -196,6 +208,7 @@
       <div id="categoryBreakdown"></div>
     </div>
 
+    <div class="search-row"><input id="historySearch" type="text" placeholder="Поиск по названию или категории"></div>
     <div class="chips" id="historyFilters">
       <div class="chip active" data-f="all">Все</div>
       <div class="chip" data-f="income">Доход</div>
@@ -210,9 +223,10 @@
   <!-- RECURRING -->
   <section class="screen" id="screen-recurring">
     <div class="section-title"><span>Регулярные платежи</span></div>
-    <div class="card" style="padding:12px 14px; margin-bottom:12px;">
-      <div style="font-size:10px; color:var(--muted);">Списания в этом месяце</div>
-      <div style="font-size:22px; font-weight:600; color:var(--danger);" id="plannedTotal">0 ₽</div>
+    <div class="card" style="padding:12px 14px; margin-bottom:12px; display:flex; justify-content:space-between;">
+      <div style="display:flex; flex-direction:column; gap:2px;"><span class="balance-label">доход в этом месяце</span><span class="balance-val" style="color:var(--success);" id="plannedIncome">0 ₽</span></div>
+      <div style="display:flex; flex-direction:column; gap:2px;"><span class="balance-label">расход в этом месяце</span><span class="balance-val" style="color:var(--danger);" id="plannedTotal">0 ₽</span></div>
+      <div style="display:flex; flex-direction:column; gap:2px; text-align:right;"><span class="balance-label">итого</span><span class="balance-val" id="plannedNet">0 ₽</span></div>
     </div>
     <div class="card" style="padding:4px 14px;" id="recurringList"></div>
     <button class="addbtn" id="addRuleBtn">+ добавить регулярный платёж</button>
@@ -267,7 +281,7 @@
   <div class="sheet" id="gameSheet">
     <button class="close-x" data-action="closeGame">✕</button>
     <h2>Побег по чеку</h2>
-    <div style="text-align:center; font-size:10px; color:var(--muted); margin-bottom:8px;">тап по полю или пробел — прыжок</div>
+    <div style="text-align:center; font-size:11px; color:var(--muted); margin-bottom:8px;">тап по полю или пробел — прыжок</div>
     <canvas id="gameCanvas" width="380" height="150" style="width:100%; display:block; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); touch-action:none;"></canvas>
     <div style="display:flex; justify-content:space-between; font-size:11px; margin-top:10px;">
       <span>Счёт: <b id="gameScore">0</b></span>
@@ -331,17 +345,17 @@ function defaultState(){
   return {
     accounts: [ {id:'a_cash', name:'Наличные', type:'cash', balance:0, currency:'RUB'} ],
     categories: [
-      {id:'c1',name:'Продукты',type:'expense'},{id:'c2',name:'Транспорт',type:'expense'},
-      {id:'c3',name:'Кафе',type:'expense'},{id:'c4',name:'Дом',type:'expense'},
-      {id:'c5',name:'Развлечения',type:'expense'},{id:'c6',name:'Другое',type:'expense'},
-      {id:'i1',name:'Зарплата',type:'income'},{id:'i2',name:'Подработка',type:'income'},
-      {id:'i3',name:'Перевод',type:'income'},{id:'i4',name:'Подарок',type:'income'},
-      {id:'i5',name:'Другое',type:'income'}
+      {id:'c1',name:'Продукты',type:'expense',icon:'🛒'},{id:'c2',name:'Транспорт',type:'expense',icon:'🚌'},
+      {id:'c3',name:'Кафе',type:'expense',icon:'☕'},{id:'c4',name:'Дом',type:'expense',icon:'🏠'},
+      {id:'c5',name:'Развлечения',type:'expense',icon:'🎬'},{id:'c6',name:'Другое',type:'expense',icon:'📎'},
+      {id:'i1',name:'Зарплата',type:'income',icon:'💼'},{id:'i2',name:'Подработка',type:'income',icon:'🛠'},
+      {id:'i3',name:'Перевод',type:'income',icon:'↔'},{id:'i4',name:'Подарок',type:'income',icon:'🎁'},
+      {id:'i5',name:'Другое',type:'income',icon:'📎'}
     ],
     transactions: [],
     recurringRules: [],
     dueReminders: [],
-    settings: { activeAccountId:'a_cash', theme:'light', style:'receipt', pin:null }
+    settings: { activeAccountId:'a_cash', theme:'light', style:'receipt', pin:null, lastRates:{} }
   };
 }
 function loadState(){
@@ -363,6 +377,28 @@ function addPeriod(dateStr, rule){
   else if(rule.frequency==='yearly') d.setFullYear(d.getFullYear()+n);
   else if(rule.frequency==='custom') d.setDate(d.getDate()+n);
   return localDateStr(d);
+}
+function subtractPeriod(dateStr, rule){
+  const d = new Date(dateStr+'T00:00:00');
+  const n = rule.interval || 1;
+  if(rule.frequency==='daily') d.setDate(d.getDate()-n);
+  else if(rule.frequency==='weekly') d.setDate(d.getDate()-7*n);
+  else if(rule.frequency==='monthly') d.setMonth(d.getMonth()-n);
+  else if(rule.frequency==='yearly') d.setFullYear(d.getFullYear()-n);
+  else if(rule.frequency==='custom') d.setDate(d.getDate()-n);
+  return localDateStr(d);
+}
+function ruleProgress(rule){
+  if(!rule.nextDate) return 0;
+  const prevDate = subtractPeriod(rule.nextDate, rule);
+  const totalMs = new Date(rule.nextDate+'T00:00:00') - new Date(prevDate+'T00:00:00');
+  if(totalMs<=0) return 0;
+  const elapsedMs = new Date(todayStr()+'T00:00:00') - new Date(prevDate+'T00:00:00');
+  return Math.max(0, Math.min(1, elapsedMs/totalMs));
+}
+function daysUntil(dateStr){
+  const ms = new Date(dateStr+'T00:00:00') - new Date(todayStr()+'T00:00:00');
+  return Math.round(ms / 86400000);
 }
 function ruleOccurrencesAmountInMonth(rule, monthStr){
   let d = rule.startDate || rule.nextDate;
@@ -422,7 +458,7 @@ function renderHome(){
   const row = document.getElementById('catsRow');
   row.innerHTML = cats.map(c=>`
     <div class="cat ${c.id===ui.categoryId?'active':''}" data-cat="${c.id}">
-      <div class="ic">${c.name.slice(0,2).toUpperCase()}</div>
+      <div class="ic">${c.icon || c.name.slice(0,2).toUpperCase()}</div>
       <span>${c.name}</span>
     </div>`).join('') + `
     <div class="cat" data-action="addCategory">
@@ -430,7 +466,32 @@ function renderHome(){
     </div>`;
 
   renderReminders();
+  renderRepeatLast();
 }
+function renderRepeatLast(){
+  const acc = state.accounts.find(a=>a.id===state.settings.activeAccountId) || state.accounts[0];
+  const row = document.getElementById('repeatLastRow');
+  const btn = document.getElementById('repeatLastBtn');
+  if(!acc){ row.style.display='none'; return; }
+  const last = state.transactions.find(t=> t.accountId===acc.id && !t.isTransfer && !t.isAdjustment);
+  if(!last){ row.style.display='none'; return; }
+  const cat = state.categories.find(c=>c.id===last.categoryId);
+  const label = cat ? cat.name : '—';
+  btn.textContent = `↻ Повторить: ${label} · ${last.type==='income'?'+':'−'} ${fmtMoney(last.amount, acc.currency)}`;
+  btn.dataset.txId = last.id;
+  row.style.display = 'block';
+}
+document.getElementById('repeatLastBtn').addEventListener('click', ()=>{
+  const acc = state.accounts.find(a=>a.id===state.settings.activeAccountId) || state.accounts[0];
+  const lastId = document.getElementById('repeatLastBtn').dataset.txId;
+  const last = state.transactions.find(t=>t.id===lastId);
+  if(!acc || !last) return;
+  const tx = { id:uid(), accountId:acc.id, categoryId:last.categoryId, type:last.type, amount:last.amount, date:todayStr(), note:'' };
+  state.transactions.unshift(tx);
+  acc.balance += (last.type==='income'? last.amount : -last.amount);
+  saveState(state); renderHome();
+  showToast('Записано: ' + fmtMoney(last.amount, acc.currency));
+});
 function renderReminders(){
   const box = document.getElementById('remindersBox');
   if(!state.dueReminders.length){ box.innerHTML=''; return; }
@@ -471,6 +532,12 @@ function renderAccounts(){
 /* ---------- render: history ---------- */
 let historyFilter = 'all';
 let historyPeriod = { type: 'month' };
+let historySearchQuery = '';
+function txSearchText(t){
+  const cat = state.categories.find(c=>c.id===t.categoryId);
+  const rule = t.recurringRuleId ? state.recurringRules.find(r=>r.id===t.recurringRuleId) : null;
+  return [t.note, cat?cat.name:'', rule?rule.note:''].filter(Boolean).join(' ').toLowerCase();
+}
 function dstr(d){ return localDateStr(d); }
 function computeRange(period){
   const today = new Date();
@@ -510,7 +577,7 @@ function renderHistory(){
   document.getElementById('categoryBreakdown').innerHTML = sortedCats.length ? sortedCats.map(entry=>{
     const cat = state.categories.find(c=>c.id===entry.categoryId);
     const pct = Math.round((entry.sum/maxCat)*100);
-    return `<div class="cat-bar-row">
+    return `<div class="cat-bar-row" data-action="viewCategoryDetail" data-cat="${entry.categoryId}" data-cur="${entry.currency}">
       <div class="cat-bar-top"><span>${cat?cat.name:'—'}</span><span>${fmtMoney(entry.sum, entry.currency)}</span></div>
       <div class="cat-bar-track"><div class="cat-bar-fill" style="width:${pct}%;"></div></div>
     </div>`;
@@ -522,6 +589,7 @@ function renderHistory(){
   if(historyFilter==='transfer') txs = txs.filter(t=>t.isTransfer);
   if(historyFilter==='receipts') txs = txs.filter(t=>t.receiptUrl);
   if(historyFilter==='recurring') txs = txs.filter(t=>t.recurringRuleId);
+  if(historySearchQuery) txs = txs.filter(t=> txSearchText(t).includes(historySearchQuery));
 
   const groups = {};
   txs.forEach(t=>{ (groups[t.date] = groups[t.date]||[]).push(t); });
@@ -545,7 +613,7 @@ function renderHistory(){
       const cur = accCurrency(t.accountId);
       totalMap[cur] = (totalMap[cur]||0) + (t.type==='income'? t.amount : -t.amount);
       html += `<div class="row">
-        <div class="left"><span class="name">${rowLabel}${t.recurringRuleId?' <span class="sub">(регулярный)</span>':''}${t.isTransfer?' <span class="sub">(перевод)</span>':''}${t.isAdjustment?' <span class="sub">(корректировка)</span>':''}</span></div>
+        <div class="left"><div><div class="name">${rowLabel}${t.recurringRuleId?' <span class="sub">(регулярный)</span>':''}${t.isTransfer?' <span class="sub">(перевод)</span>':''}${t.isAdjustment?' <span class="sub">(корректировка)</span>':''}</div>${t.rateUsed?`<div class="sub">курс ${t.rateUsed}</div>`:''}</div></div>
         <div style="display:flex; align-items:center; gap:8px;">
           ${t.receiptUrl?`<span class="receipt-icon" data-action="viewReceipt" data-id="${t.id}">чек</span>`:''}
           <span class="val ${t.type}">${t.type==='income'?'+':'−'} ${fmtMoney(t.amount, cur)}</span>
@@ -563,26 +631,38 @@ function renderHistory(){
 /* ---------- render: recurring ---------- */
 function renderRecurring(){
   const monthNow = todayStr().slice(0,7);
-  const plannedMap = {};
-  state.recurringRules.filter(r=>r.active && r.type==='expense').forEach(r=>{
+  const plannedExpenseMap = {}, plannedIncomeMap = {};
+  state.recurringRules.filter(r=>r.active).forEach(r=>{
     const sum = ruleOccurrencesAmountInMonth(r, monthNow);
     if(sum>0){
       const cur = accCurrency(r.accountId);
-      plannedMap[cur] = (plannedMap[cur]||0) + sum;
+      const map = r.type==='income' ? plannedIncomeMap : plannedExpenseMap;
+      map[cur] = (map[cur]||0) + sum;
     }
   });
-  document.getElementById('plannedTotal').textContent = fmtCurrencyMap(plannedMap);
+  const netMap = {};
+  Object.keys(plannedIncomeMap).forEach(cur=> netMap[cur] = (netMap[cur]||0) + plannedIncomeMap[cur]);
+  Object.keys(plannedExpenseMap).forEach(cur=> netMap[cur] = (netMap[cur]||0) - plannedExpenseMap[cur]);
+  document.getElementById('plannedIncome').textContent = fmtCurrencyMap(plannedIncomeMap);
+  document.getElementById('plannedTotal').textContent = fmtCurrencyMap(plannedExpenseMap);
+  document.getElementById('plannedNet').textContent = fmtCurrencyMap(netMap, true);
 
   const freqLabel = {daily:'ежедневно', weekly:'еженедельно', monthly:'ежемесячно', yearly:'ежегодно', custom:'произвольно'};
   document.getElementById('recurringList').innerHTML = state.recurringRules.map(r=>{
     const cat = state.categories.find(c=>c.id===r.categoryId);
     const label = r.note ? r.note : (cat?cat.name:'—');
-    return `<div class="row">
-      <div class="left"><div><div class="name">${label}${r.note && cat?` <span class="sub">· ${cat.name}</span>`:''}${!r.active?' <span class="sub">(на паузе)</span>':''}</div><div class="sub">${freqLabel[r.frequency]||r.frequency} · след. ${fmtDateRu(r.nextDate)}</div></div></div>
-      <div style="display:flex; align-items:center; gap:8px;">
-        <span class="val ${r.type}">${r.type==='income'?'+':'−'} ${fmtMoney(r.amount, accCurrency(r.accountId))}</span>
-        <span class="receipt-icon" data-action="editRule" data-id="${r.id}">✎</span>
+    const progress = r.active ? ruleProgress(r) : 0;
+    const days = daysUntil(r.nextDate);
+    const dueLabel = !r.active ? '' : days<=0 ? 'сегодня' : days===1 ? 'завтра' : `через ${days} дн.`;
+    return `<div class="row" style="align-items:flex-start; flex-direction:column; gap:6px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+        <div class="left"><div><div class="name">${label}${r.note && cat?` <span class="sub">· ${cat.name}</span>`:''}${!r.active?' <span class="sub">(на паузе)</span>':''}</div><div class="sub">${freqLabel[r.frequency]||r.frequency} · след. ${fmtDateRu(r.nextDate)}${dueLabel?` · ${dueLabel}`:''}</div></div></div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span class="val ${r.type}">${r.type==='income'?'+':'−'} ${fmtMoney(r.amount, accCurrency(r.accountId))}</span>
+          <span class="receipt-icon" data-action="editRule" data-id="${r.id}">✎</span>
+        </div>
       </div>
+      ${r.active ? `<div class="rule-progress" style="width:100%;"><div class="rule-progress-fill" style="width:${Math.round(progress*100)}%;"></div></div>` : ''}
     </div>`;
   }).join('') || `<div style="padding:16px 0; text-align:center; color:var(--faint); font-size:11px;">Нет регулярных платежей</div>`;
 }
@@ -631,6 +711,7 @@ document.getElementById('saveBtn').addEventListener('click', ()=>{
   ui.amountStr='0'; ui.receiptDataUrl=null;
   document.getElementById('receiptPreviewRow').style.display='none';
   saveState(state); renderHome();
+  showToast('Записано: ' + fmtMoney(value, acc.currency));
 });
 document.getElementById('attachReceiptBtn').addEventListener('click', ()=>{
   document.getElementById('receiptInput').click();
@@ -751,13 +832,14 @@ function openTransferForm(){
       <div class="field"><label>Сумма списания</label><input id="tr_amount_from" type="number" placeholder="0"></div>
       <div class="field"><label id="tr_rate_label">Курс</label><input id="tr_rate" type="number" step="any" value="1"></div>
     </div>
-    <div id="tr_preview" style="font-size:10px; color:var(--faint); margin:-4px 0 10px;">Курс указывается вручную: сколько единиц счёта «Откуда» стоит 1 единица счёта «Куда».</div>
+    <div id="tr_preview" style="font-size:11px; color:var(--faint); margin:-4px 0 10px;">Курс указывается вручную: сколько единиц счёта «Откуда» стоит 1 единица счёта «Куда».</div>
     <div class="field"><label>Дата</label><input id="tr_date" type="date" value="${todayStr()}"></div>
     <div class="field"><label>Заметка (необязательно)</label><input id="tr_note" placeholder="например, Пополнение карты"></div>
     <div class="sheet-actions">
       <button data-action="close">Отмена</button>
       <button class="primary" data-action="saveTransfer">Перевести</button>
     </div>`);
+  _trRatePairKey = null;
   updateTransferPreview();
   document.getElementById('tr_from').addEventListener('change', updateTransferPreview);
   document.getElementById('tr_to').addEventListener('change', updateTransferPreview);
@@ -768,6 +850,7 @@ function computeTransferAmountTo(fromCur, toCur, amountFrom, rate){
   if(fromCur===toCur) return amountFrom;
   return rate>0 ? amountFrom / rate : 0;
 }
+let _trRatePairKey = null;
 function updateTransferPreview(){
   const fromSel = document.getElementById('tr_from'); const toSel = document.getElementById('tr_to');
   if(!fromSel || !toSel) return;
@@ -780,9 +863,16 @@ function updateTransferPreview(){
   if(sameCur){
     rateLabel.textContent = 'Курс';
     rateInput.value = 1; rateInput.disabled = true;
+    _trRatePairKey = null;
   } else {
     rateLabel.textContent = `Курс (1 ${currencySymbol(toCur)} = ? ${currencySymbol(fromCur)})`;
     rateInput.disabled = false;
+    const pairKey = fromCur+'_'+toCur;
+    if(pairKey !== _trRatePairKey){
+      const remembered = state.settings.lastRates && state.settings.lastRates[pairKey];
+      if(remembered) rateInput.value = remembered;
+      _trRatePairKey = pairKey;
+    }
   }
   const amountFrom = parseFloat(document.getElementById('tr_amount_from').value) || 0;
   const rate = parseFloat(rateInput.value) || 0;
@@ -798,6 +888,36 @@ document.getElementById('historyFilters').addEventListener('click', e=>{
   document.querySelectorAll('#historyFilters .chip').forEach(c=>c.classList.remove('active'));
   chip.classList.add('active'); historyFilter = chip.dataset.f; renderHistory();
 });
+document.getElementById('historySearch').addEventListener('input', e=>{
+  historySearchQuery = e.target.value.trim().toLowerCase();
+  renderHistory();
+});
+document.getElementById('categoryBreakdown').addEventListener('click', e=>{
+  const row = e.target.closest('[data-action="viewCategoryDetail"]'); if(!row) return;
+  openCategoryDetail(row.dataset.cat, row.dataset.cur);
+});
+function openCategoryDetail(categoryId, currency){
+  const range = computeRange(historyPeriod);
+  let txs = state.transactions.filter(t=> t.type==='expense' && !t.isTransfer && !t.isAdjustment
+    && t.categoryId===categoryId && accCurrency(t.accountId)===currency);
+  if(range.from) txs = txs.filter(t=> t.date >= range.from && t.date <= range.to);
+  txs.sort((a,b)=> b.date.localeCompare(a.date));
+  const cat = state.categories.find(c=>c.id===categoryId);
+  const total = txs.reduce((s,t)=> s + t.amount, 0);
+  const rows = txs.map(t=>{
+    const acc = state.accounts.find(a=>a.id===t.accountId);
+    return `<div class="row">
+      <div class="left"><div><div class="name">${t.note || (acc?acc.name:'—')}</div><div class="sub">${fmtDateRu(t.date)}</div></div></div>
+      <span class="val expense">− ${fmtMoney(t.amount, currency)}</span>
+    </div>`;
+  }).join('') || `<div style="padding:16px 0; text-align:center; color:var(--faint); font-size:11px;">Нет операций за период</div>`;
+  openSheet(`
+    <button class="close-x" data-action="close">✕</button>
+    <h2>${cat?cat.name:'Категория'}</h2>
+    <div class="total-row" style="margin-top:0;"><span>ИТОГО ЗА ПЕРИОД</span><span>${fmtMoney(total, currency)}</span></div>
+    <div style="margin-top:6px;">${rows}</div>
+    <div class="sheet-actions"><button data-action="close">Закрыть</button></div>`);
+}
 document.getElementById('periodFilters').addEventListener('click', e=>{
   const chip = e.target.closest('.chip'); if(!chip) return;
   const p = chip.dataset.p;
@@ -953,7 +1073,11 @@ function openAddCategory(){
   openSheet(`
     <button class="close-x" data-action="close">✕</button>
     <h2>Новая категория</h2>
-    <div class="field"><label>Название</label><input id="cat_name" placeholder="например, Спорт"></div>
+    <div class="field-row">
+      <div class="field" style="flex:0 0 64px;"><label>Значок</label><input id="cat_icon" maxlength="2" placeholder="🏋️" style="text-align:center;"></div>
+      <div class="field"><label>Название</label><input id="cat_name" placeholder="например, Спорт"></div>
+    </div>
+    <div style="font-size:10px; color:var(--faint); margin:-6px 0 10px;">Необязательно: один эмодзи. Если оставить пустым — будут первые буквы названия.</div>
     <div class="field"><label>Тип</label>
       <select id="cat_type"><option value="${ui.mode}">${ui.mode==='expense'?'Расход':'Доход'}</option><option value="${ui.mode==='expense'?'income':'expense'}">${ui.mode==='expense'?'Доход':'Расход'}</option></select>
     </div>
@@ -975,7 +1099,7 @@ document.getElementById('settingsBtn').addEventListener('click', ()=>{
       <button data-action="setupPin">${state.settings.pin?'Изменить PIN':'Установить PIN'}</button>
       ${state.settings.pin?'<button data-action="removePin" style="color:var(--danger);">Убрать PIN</button>':''}
     </div>
-    <div style="font-size:9px; color:var(--faint); margin:-6px 0 10px;">PIN хранится локально на устройстве и защищает только от случайного открытия приложения — это не шифрование данных.</div>
+    <div style="font-size:10px; color:var(--faint); margin:-6px 0 10px;">PIN хранится локально на устройстве и защищает только от случайного открытия приложения — это не шифрование данных.</div>
     <div class="sheet-actions">
       <button data-action="exportData">Экспорт данных</button>
       <button data-action="importData">Импорт данных</button>
@@ -1021,14 +1145,40 @@ document.getElementById('confirmNoBtn').addEventListener('click', _closeConfirm)
 document.getElementById('confirmOverlay').addEventListener('click', e=>{
   if(e.target.id==='confirmOverlay') _closeConfirm();
 });
+
+/* ---------- toast ---------- */
+let _toastTimer = null;
+function showToast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(()=> el.classList.remove('show'), 1800);
+}
+
+/* ---------- guard against losing unsaved input when closing a sheet ---------- */
+function sheetIsDirty(){
+  const ruleAmt = document.getElementById('r_amount');
+  if(ruleAmt && parseFloat(ruleAmt.value) > 0) return true;
+  const trAmt = document.getElementById('tr_amount_from');
+  if(trAmt && parseFloat(trAmt.value) > 0) return true;
+  return false;
+}
+function closeSheetGuarded(){
+  if(sheetIsDirty()){
+    showConfirm('Закрыть форму без сохранения введённых данных?', closeSheet);
+  } else {
+    closeSheet();
+  }
+}
 document.getElementById('overlay').addEventListener('click', e=>{
-  if(e.target.id==='overlay') closeSheet();
+  if(e.target.id==='overlay') closeSheetGuarded();
 });
 document.getElementById('sheetContent').addEventListener('click', e=>{
   const btn = e.target.closest('[data-action]'); if(!btn) return;
   const action = btn.dataset.action;
 
-  if(action==='close') closeSheet();
+  if(action==='close') closeSheetGuarded();
 
   if(action==='selectAccount'){
     state.settings.activeAccountId = btn.dataset.id;
@@ -1092,14 +1242,20 @@ document.getElementById('sheetContent').addEventListener('click', e=>{
     const fromAcc = state.accounts.find(a=>a.id===fromId);
     const toAcc = state.accounts.find(a=>a.id===toId);
     if(!fromAcc || !toAcc) return;
+    const sameCur = fromCurCheck === toCurCheck;
     const transferId = uid();
-    const txOut = { id:uid(), accountId:fromId, categoryId:null, type:'expense', amount:amountFrom, date, note: note || ('Перевод → '+toAcc.name), isTransfer:true, transferId, transferPeerAccountId: toId };
-    const txIn  = { id:uid(), accountId:toId, categoryId:null, type:'income', amount:amountTo, date, note: note || ('Перевод ← '+fromAcc.name), isTransfer:true, transferId, transferPeerAccountId: fromId };
+    const txOut = { id:uid(), accountId:fromId, categoryId:null, type:'expense', amount:amountFrom, date, note: note || ('Перевод → '+toAcc.name), isTransfer:true, transferId, transferPeerAccountId: toId, rateUsed: sameCur?null:rate };
+    const txIn  = { id:uid(), accountId:toId, categoryId:null, type:'income', amount:amountTo, date, note: note || ('Перевод ← '+fromAcc.name), isTransfer:true, transferId, transferPeerAccountId: fromId, rateUsed: sameCur?null:rate };
     state.transactions.unshift(txIn);
     state.transactions.unshift(txOut);
     fromAcc.balance -= amountFrom;
     toAcc.balance += amountTo;
+    if(!sameCur){
+      if(!state.settings.lastRates) state.settings.lastRates = {};
+      state.settings.lastRates[fromCurCheck+'_'+toCurCheck] = rate;
+    }
     saveState(state); closeSheet(); renderAccounts(); renderHistory(); renderHome();
+    showToast('Переведено: ' + fmtMoney(amountFrom, fromCurCheck) + ' → ' + fmtMoney(amountTo, toCurCheck));
   }
 
   if(action==='saveEditTx'){
@@ -1145,9 +1301,10 @@ document.getElementById('sheetContent').addEventListener('click', e=>{
   if(action==='saveCategory'){
     const name = document.getElementById('cat_name').value.trim();
     const type = document.getElementById('cat_type').value;
+    const icon = document.getElementById('cat_icon').value.trim();
     if(!name) return;
     const id = uid();
-    state.categories.push({id, name, type});
+    state.categories.push({id, name, type, icon: icon || null});
     if(type===ui.mode) ui.categoryId = id;
     saveState(state); closeSheet(); renderHome();
   }
